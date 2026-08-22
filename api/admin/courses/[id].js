@@ -1,5 +1,5 @@
-const { requireAuth, requireAdmin } = require('../../../lib/auth');
-const { supabaseAdmin } = require('../../../lib/supabase');
+const { requireAuth, requireAdmin } = require('../../lib/auth');
+const { supabaseAdmin } = require('../../lib/supabase');
 const { getCourseWithDetails, validateCourseInput } = require('./index');
 
 module.exports = async (req, res) => {

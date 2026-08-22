@@ -1,5 +1,5 @@
-const { requireAuth, requireAdmin } = require('../../../../lib/auth');
-const r2 = require('../../../../lib/r2');
+const { requireAuth, requireAdmin } = require('../../../lib/auth');
+const r2 = require('../../../lib/r2');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

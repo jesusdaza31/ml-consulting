@@ -1,5 +1,5 @@
-const { requireAuth } = require('../../../../lib/auth');
-const { supabaseAdmin } = require('../../../../lib/supabase');
+const { requireAuth } = require('../../../lib/auth');
+const { supabaseAdmin } = require('../../../lib/supabase');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {

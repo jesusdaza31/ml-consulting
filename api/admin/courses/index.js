@@ -171,7 +171,7 @@ function validateCourseInput(b) {
   };
 }
 
-module.exports = async (req, res) => {
+async function handleCoursesIndex(req, res) {
   await requireAuth(req, res, async () => {
     await requireAdmin(req, res, async () => {
       if (req.method === 'GET') {
@@ -301,8 +301,9 @@ module.exports = async (req, res) => {
       }
     });
   });
-};
+}
 
+module.exports = handleCoursesIndex;
 module.exports.getCourseWithDetails = getCourseWithDetails;
 module.exports.validateCourseInput = validateCourseInput;
 module.exports.videoUrlToEmbed = videoUrlToEmbed;

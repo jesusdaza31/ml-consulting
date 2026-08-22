@@ -1,6 +1,6 @@
-const { requireAuth, requireAdmin } = require('../../../../../lib/auth');
-const { supabaseAdmin } = require('../../../../../lib/supabase');
-const { getCourseWithDetails, videoUrlToEmbed } = require('../../../index');
+const { requireAuth, requireAdmin } = require('../../../../lib/auth');
+const { supabaseAdmin } = require('../../../../lib/supabase');
+const { getCourseWithDetails, videoUrlToEmbed } = require('../../index');
 
 function validateContenidoInput(b) {
   b = b || {};
