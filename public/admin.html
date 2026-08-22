@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Panel de administración | ML Consulting Services</title>
+
+    <meta name="description"
+          content="Panel de administración de ML Consulting Services — clientes, cursos e inscripciones.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <link rel="stylesheet" href="login.css">
+    <link rel="stylesheet" href="admin.css">
+</head>
+
+<body class="admin-dash">
+
+    <div class="admin-shell">
+
+        <!-- SIDEBAR -->
+        <aside class="admin-sidebar">
+
+            <a href="/" class="admin-side-brand">
+                <span class="admin-side-logo">
+                    <img src="assets/logo.png" alt="ML Consulting Services LLC logo">
+                </span>
+                <span class="admin-side-name">ML Consulting<em>Panel</em></span>
+            </a>
+
+            <nav class="admin-nav">
+                <button type="button" class="admin-nav-item active" data-tab="resumen">
+                    <i class="fa-solid fa-chart-pie"></i> Resumen
+                </button>
+                <button type="button" class="admin-nav-item" data-tab="clientes">
+                    <i class="fa-solid fa-users"></i> Clientes
+                </button>
+                <button type="button" class="admin-nav-item" data-tab="cursos">
+                    <i class="fa-solid fa-graduation-cap"></i> Cursos
+                </button>
+                <button type="button" class="admin-nav-item" data-tab="solicitudes">
+                    <i class="fa-solid fa-bell"></i> Solicitudes
+                    <span class="admin-nav-badge" id="pendingCount">0</span>
+                </button>
+                <button type="button" class="admin-nav-item" data-tab="videos">
+                    <i class="fa-solid fa-video"></i> Videos
+                </button>
+            </nav>
+
+            <div class="admin-side-foot">
+                <div class="admin-side-user">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span id="adminName">Administrador</span>
+                </div>
+                <a href="/" class="admin-side-link"><i class="fa-solid fa-globe"></i> Ver sitio</a>
+                <button type="button" class="admin-logout" id="adminLogout">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+                </button>
+            </div>
+
+        </aside>
+
+        <!-- CONTENIDO -->
+        <main class="admin-main">
+
+            <header class="admin-topbar">
+                <h1 id="panelTitle">Resumen</h1>
+            </header>
+
+            <!-- RESUMEN -->
+            <section class="admin-panel active" id="panel-resumen">
+
+                <div class="stat-grid" id="dashStats"></div>
+
+                <div class="admin-block">
+                    <h2 class="admin-block-title">Clientes con tiempo por vencer</h2>
+                    <p class="admin-block-note">Inscripciones activas con vencimiento en 7 días o menos.</p>
+                    <div id="porVencer" class="por-vencer-list"></div>
+                </div>
+
+            </section>
+
+            <!-- CLIENTES -->
+            <section class="admin-panel" id="panel-clientes">
+
+                <div class="admin-toolbar">
+                    <input type="search" id="clientsSearch" class="admin-input"
+                           placeholder="Buscar por nombre o correo…" aria-label="Buscar clientes">
+                </div>
+
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Correo</th>
+                                <th>Registrado</th>
+                                <th>Inscripciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsBody">
+                            <tr><td colspan="4" class="admin-loading">Cargando…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </section>
+
+            <!-- CURSOS -->
+            <section class="admin-panel" id="panel-cursos">
+
+                <div class="admin-toolbar">
+                    <button type="button" class="admin-btn admin-btn-primary" id="addCourseBtn">
+                        <i class="fa-solid fa-plus"></i> Agregar curso
+                    </button>
+                </div>
+
+                <div class="courses-grid" id="coursesList">
+                    <p class="admin-loading">Cargando…</p>
+                </div>
+
+            </section>
+
+            <!-- SOLICITUDES -->
+            <section class="admin-panel" id="panel-solicitudes">
+
+                <div class="admin-block">
+                    <h2 class="admin-block-title">Solicitudes de inscripción</h2>
+                    <p class="admin-block-note">Aproba o rechaza las solicitudes pendientes de los clientes.</p>
+                    <div id="solicitudesList" class="solicitudes-list">
+                        <p class="admin-loading">Cargando…</p>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- VIDEOS -->
+            <section class="admin-panel" id="panel-videos">
+
+                <div id="videosState"></div>
+
+            </section>
+
+        </main>
+
+    </div>
+
+    <!-- MODAL -->
+    <div class="admin-modal" id="adminModal" hidden>
+        <div class="admin-modal-card">
+            <button type="button" class="admin-modal-close" id="modalClose" aria-label="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <div class="admin-toast" id="adminToast" hidden></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="admin.js"></script>
+
+</body>
+
+</html>

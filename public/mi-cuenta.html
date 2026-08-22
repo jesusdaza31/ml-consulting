@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Mis cursos | ML Consulting Services</title>
+
+    <meta name="description"
+          content="Consulta tus cursos, contenido y tiempo restante en ML Consulting Services.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <link rel="stylesheet" href="login.css">
+    <link rel="stylesheet" href="mi-cuenta.css">
+</head>
+
+<body class="mc-body">
+
+    <header class="mc-header">
+        <div class="mc-header-inner">
+            <a href="/" class="mc-brand">
+                <span class="mc-brand-logo"><img src="assets/logo.png" alt="ML Consulting Services LLC logo"></span>
+                <span class="mc-brand-name">ML Consulting<em>Mis cursos</em></span>
+            </a>
+
+            <nav class="mc-nav">
+                <a href="/" class="mc-nav-link"><i class="fa-solid fa-globe"></i> Volver al sitio</a>
+                <span class="mc-user" id="mcUserName"></span>
+                <button type="button" class="mc-logout" id="mcLogout">
+                    <i class="fa-solid fa-right-from-bracket"></i> Cerrar sesión
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <main class="mc-main">
+
+        <div class="mc-tabs" role="tablist">
+            <button type="button" class="mc-tab active" data-mc-tab="miscursos">Mis cursos</button>
+            <button type="button" class="mc-tab" data-mc-tab="catalogo">Catálogo</button>
+        </div>
+
+        <!-- MIS CURSOS -->
+        <section id="view-list">
+            <div class="mc-heading">
+                <span class="mc-kicker">Tus cursos y servicios</span>
+                <h1>Mis cursos</h1>
+                <p>Todo lo que tienes asignado, con su tiempo restante.</p>
+            </div>
+            <div class="mc-courses" id="mcCourses">
+                <p class="mc-loading">Cargando…</p>
+            </div>
+        </section>
+
+        <!-- CATÁLOGO -->
+        <section id="view-catalogo" hidden>
+            <div class="mc-heading">
+                <span class="mc-kicker">Explora y solicita</span>
+                <h1>Catálogo de cursos</h1>
+                <p>Solicita tu inscripción y el equipo la revisará.</p>
+            </div>
+            <div class="mc-courses" id="mcCatalog">
+                <p class="mc-loading">Cargando…</p>
+            </div>
+        </section>
+
+        <!-- DETALLE DEL CATÁLOGO (sin inscripción) -->
+        <section id="view-cat-detail" hidden>
+            <button type="button" class="mc-back" id="mcCatBack">
+                <i class="fa-solid fa-arrow-left"></i> Volver al catálogo
+            </button>
+            <div id="catDetail"></div>
+        </section>
+
+        <!-- DETALLE (inscrito) -->
+        <section id="view-detail" hidden>
+            <button type="button" class="mc-back" id="mcBack">
+                <i class="fa-solid fa-arrow-left"></i> Volver a mis cursos
+            </button>
+            <div id="mcDetail"></div>
+        </section>
+
+    </main>
+
+    <div class="admin-toast" id="mcToast" hidden></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="mi-cuenta.js"></script>
+
+</body>
+
+</html>

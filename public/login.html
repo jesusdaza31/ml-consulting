@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Iniciar sesión | ML Consulting Services</title>
+
+    <meta name="description"
+          content="Inicia sesión o crea tu cuenta en ML Consulting Services — impuestos, migración, seguros y notaría.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@300;400;500;600;700;800&display=swap"
+          rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+    <link rel="stylesheet" href="login.css">
+</head>
+
+<body class="auth-body">
+
+    <a href="/" class="auth-back-link">
+        <i class="fa-solid fa-arrow-left"></i>
+        Volver al sitio
+    </a>
+
+    <main class="auth-card">
+
+        <div class="auth-brand">
+            <span class="auth-brand-logo">
+                <img src="assets/logo.png" alt="ML Consulting Services LLC logo">
+            </span>
+            <h1>ML Consulting <em>Services</em></h1>
+            <p class="auth-subtitle">Accede a tu cuenta</p>
+        </div>
+
+        <div class="auth-tabs" role="tablist">
+            <button type="button" class="auth-tab active" data-tab="login" role="tab">Iniciar sesión</button>
+            <button type="button" class="auth-tab" data-tab="register" role="tab">Registrarse</button>
+        </div>
+
+        <!-- INICIAR SESIÓN -->
+        <form class="auth-form active" id="loginForm" novalidate>
+            <label class="auth-field">
+                <span>Correo electrónico</span>
+                <input type="email" name="email" placeholder="tu@correo.com"
+                       autocomplete="email" required>
+            </label>
+
+            <label class="auth-field">
+                <span>Contraseña</span>
+                <input type="password" name="password" placeholder="••••••••"
+                       autocomplete="current-password" required>
+            </label>
+
+            <p class="auth-error" id="loginError" hidden></p>
+
+            <button type="submit" class="auth-btn">
+                Iniciar sesión <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <!-- REGISTRARSE -->
+        <form class="auth-form" id="registerForm" novalidate>
+            <label class="auth-field">
+                <span>Nombre completo</span>
+                <input type="text" name="name" placeholder="Tu nombre"
+                       autocomplete="name" required>
+            </label>
+
+            <label class="auth-field">
+                <span>Correo electrónico</span>
+                <input type="email" name="email" placeholder="tu@correo.com"
+                       autocomplete="email" required>
+            </label>
+
+            <label class="auth-field">
+                <span>Contraseña <small>(mínimo 6 caracteres)</small></span>
+                <input type="password" name="password" placeholder="••••••••"
+                       autocomplete="new-password" required>
+            </label>
+
+            <p class="auth-error" id="registerError" hidden></p>
+
+            <button type="submit" class="auth-btn">
+                Crear cuenta <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </form>
+
+        <p class="auth-note">
+            Al crear tu cuenta podrás acceder desde cualquier dispositivo.
+            <a href="/">¿Prefieres navegar sin cuenta?</a>
+        </p>
+
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="auth.js"></script>
+    <script src="login.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,395 @@
+/* =======================================
+   ML CONSULTING — login.css
+======================================= */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+:root{
+
+    --primary:#6A2035;
+    --primary-dark:#541729;
+    --primary-deep:#3F1220;
+
+    --gold:#C8A76B;
+    --gold-light:#D9BC7F;
+    --gold-deep:#A8813C;
+
+    --gold-gradient:linear-gradient(135deg,#D9BC7F 0%,#C8A76B 45%,#A8813C 100%);
+    --wine-gradient:linear-gradient(135deg,#6A2035 0%,#541729 55%,#3F1220 100%);
+
+    --background:#FAF8F5;
+    --white:#FFFFFF;
+
+    --text:#343434;
+    --text-light:#6B6460;
+
+    --shadow:0 24px 60px rgba(63,18,32,.18);
+
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    font-family:'Manrope',sans-serif;
+    color:var(--text);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+}
+
+a{
+    text-decoration:none;
+    color:inherit;
+}
+
+img{
+    max-width:100%;
+    display:block;
+}
+
+input{
+    font-family:inherit;
+}
+
+/* ---------- Fondo decorativo ---------- */
+
+.auth-body{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:96px 20px 48px;
+    position:relative;
+    background:
+        radial-gradient(circle at 88% 8%,rgba(200,167,107,.18) 0%,transparent 42%),
+        radial-gradient(circle at 8% 92%,rgba(106,32,53,.12) 0%,transparent 45%),
+        linear-gradient(165deg,#F6EFE8 0%,var(--background) 60%,#F1E9E2 100%);
+    overflow:hidden;
+}
+
+.auth-body::before{
+    content:"";
+    position:absolute;
+    inset:0;
+    background-image:radial-gradient(rgba(200,167,107,.14) 1px,transparent 1px);
+    background-size:26px 26px;
+    opacity:.5;
+    pointer-events:none;
+}
+
+.auth-body::after{
+    content:"";
+    position:absolute;
+    top:-120px;
+    right:-120px;
+    width:340px;
+    height:340px;
+    border-radius:50%;
+    background:radial-gradient(circle,rgba(200,167,107,.22) 0%,transparent 65%);
+    pointer-events:none;
+}
+
+/* ---------- Volver ---------- */
+
+.auth-back-link{
+    position:absolute;
+    top:26px;
+    left:26px;
+    z-index:5;
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    padding:10px 18px;
+    border:1.5px solid rgba(106,32,53,.35);
+    border-radius:999px;
+    background:rgba(255,255,255,.6);
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+    color:var(--primary);
+    font-size:.85rem;
+    font-weight:700;
+    transition:all .3s ease;
+}
+
+.auth-back-link:hover{
+    background:var(--primary);
+    color:#fff;
+    transform:translateX(-3px);
+}
+
+/* ---------- Tarjeta ---------- */
+
+.auth-card{
+    position:relative;
+    z-index:2;
+    width:100%;
+    max-width:460px;
+    background:rgba(255,255,255,.92);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+    border-radius:28px;
+    border:1px solid rgba(200,167,107,.35);
+    box-shadow:var(--shadow);
+    padding:44px 40px 34px;
+    animation:cardIn .6s ease both;
+}
+
+@keyframes cardIn{
+    from{opacity:0;transform:translateY(24px);}
+    to{opacity:1;transform:translateY(0);}
+}
+
+/* ---------- Marca ---------- */
+
+.auth-brand{
+    text-align:center;
+    margin-bottom:28px;
+}
+
+.auth-brand-logo{
+    width:76px;
+    height:76px;
+    display:inline-grid;
+    place-items:center;
+    padding:10px;
+    background:#fff;
+    border-radius:50%;
+    border:2px solid var(--gold);
+    box-shadow:0 12px 30px rgba(168,129,60,.3);
+    margin-bottom:14px;
+}
+
+.auth-brand-logo img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+}
+
+.auth-brand h1{
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.7rem;
+    font-weight:700;
+    color:var(--primary);
+    line-height:1.2;
+}
+
+.auth-brand h1 em{
+    font-style:normal;
+    display:block;
+    font-family:'Manrope',sans-serif;
+    font-size:.72rem;
+    letter-spacing:3px;
+    text-transform:uppercase;
+    color:var(--gold-deep);
+    font-weight:600;
+}
+
+.auth-subtitle{
+    margin-top:6px;
+    color:var(--text-light);
+    font-size:.92rem;
+}
+
+/* ---------- Tabs ---------- */
+
+.auth-tabs{
+    display:flex;
+    gap:6px;
+    padding:6px;
+    background:var(--background);
+    border:1px solid rgba(63,18,32,.07);
+    border-radius:999px;
+    margin-bottom:26px;
+}
+
+.auth-tab{
+    flex:1;
+    border:none;
+    background:transparent;
+    padding:11px 8px;
+    border-radius:999px;
+    font-size:.88rem;
+    font-weight:700;
+    color:var(--text-light);
+    transition:all .3s ease;
+}
+
+.auth-tab.active{
+    background:var(--wine-gradient);
+    color:#fff;
+    box-shadow:0 8px 20px rgba(106,32,53,.3);
+}
+
+.auth-tab:not(.active):hover{
+    color:var(--primary);
+}
+
+/* ---------- Formularios ---------- */
+
+.auth-form{
+    display:none;
+}
+
+.auth-form.active{
+    display:block;
+    animation:formIn .35s ease both;
+}
+
+@keyframes formIn{
+    from{opacity:0;transform:translateY(10px);}
+    to{opacity:1;transform:translateY(0);}
+}
+
+.auth-field{
+    display:block;
+    margin-bottom:18px;
+}
+
+.auth-field > span{
+    display:block;
+    margin-bottom:8px;
+    font-size:.82rem;
+    font-weight:700;
+    color:var(--primary-dark);
+}
+
+.auth-field small{
+    color:var(--text-light);
+    font-weight:500;
+}
+
+.auth-field input{
+    width:100%;
+    padding:13px 16px;
+    border:1.5px solid rgba(63,18,32,.14);
+    border-radius:12px;
+    background:#fff;
+    font-size:.95rem;
+    color:var(--text);
+    outline:none;
+    transition:border-color .3s ease,box-shadow .3s ease;
+}
+
+.auth-field input:focus{
+    border-color:var(--gold);
+    box-shadow:0 0 0 4px rgba(200,167,107,.18);
+}
+
+.auth-field input::placeholder{
+    color:#b8b0a9;
+}
+
+/* ---------- Error ---------- */
+
+.auth-error{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:18px;
+    padding:11px 14px;
+    border-radius:10px;
+    background:rgba(179,38,30,.08);
+    border:1px solid rgba(179,38,30,.25);
+    color:#A1241B;
+    font-size:.85rem;
+    font-weight:600;
+}
+
+.auth-error:empty{
+    display:none;
+}
+
+/* ---------- Botón ---------- */
+
+.auth-btn{
+    width:100%;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+    padding:15px 20px;
+    border:none;
+    border-radius:999px;
+    background:var(--wine-gradient);
+    color:#fff;
+    font-size:.95rem;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 12px 26px rgba(106,32,53,.32);
+    transition:all .35s ease;
+    position:relative;
+    overflow:hidden;
+}
+
+.auth-btn i{
+    transition:transform .35s ease;
+}
+
+.auth-btn:hover{
+    transform:translateY(-3px);
+    box-shadow:0 16px 34px rgba(106,32,53,.4);
+}
+
+.auth-btn:hover i{
+    transform:translateX(4px);
+}
+
+/* ---------- Nota ---------- */
+
+.auth-note{
+    margin-top:22px;
+    text-align:center;
+    font-size:.8rem;
+    color:var(--text-light);
+}
+
+.auth-note a{
+    color:var(--gold-deep);
+    font-weight:700;
+}
+
+.auth-note a:hover{
+    color:var(--primary);
+    text-decoration:underline;
+}
+
+/* ========= RESPONSIVE ========= */
+
+@media(max-width:480px){
+
+    .auth-body{
+        padding:84px 14px 36px;
+    }
+
+    .auth-back-link{
+        top:18px;
+        left:18px;
+        padding:8px 14px;
+        font-size:.78rem;
+    }
+
+    .auth-card{
+        padding:34px 22px 28px;
+        border-radius:22px;
+    }
+
+    .auth-brand-logo{
+        width:64px;
+        height:64px;
+    }
+
+    .auth-brand h1{
+        font-size:1.45rem;
+    }
+
+    .auth-tab{
+        padding:10px 4px;
+        font-size:.82rem;
+    }
+
+}

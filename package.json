@@ -1,0 +1,23 @@
+{
+  "name": "ml-consulting-site",
+  "version": "2.0.0",
+  "description": "ML Consulting Services — Vercel + Supabase + R2",
+  "main": "server.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "dev:local": "node dev-server.js",
+    "deploy": "vercel deploy --prod"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "@aws-sdk/client-s3": "^3.1104.0",
+    "@aws-sdk/s3-request-presigner": "^3.1104.0",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
