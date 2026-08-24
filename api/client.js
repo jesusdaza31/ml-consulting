@@ -16,14 +16,31 @@ module.exports = async (req, res) => {
   // Me
   if (path === '/me') return handleClientMe(req, res);
 
-  // File and Video
-  if (path === '/file') return handleFile(req, res);
-  if (path === '/video') return handleVideo(req, res);
+  // File and Video — dynamic /:id
+  let m;
+  if ((m = path.match(/^\/file\/([^/]+)$/))) {
+    req.query = req.query || {};
+    req.query.id = m[1];
+    return handleFile(req, res);
+  }
+  if ((m = path.match(/^\/video\/([^/]+)$/))) {
+    req.query = req.query || {};
+    req.query.id = m[1];
+    return handleVideo(req, res);
+  }
 
   // Courses
   if (path === '/courses') return handleClientCoursesIndex(req, res);
-  if (path.match(/^\/courses\/[^/]+$/)) return handleClientCourseById(req, res);
-  if (path.match(/^\/courses\/[^/]+\/solicitar$/)) return handleSolicitar(req, res);
+  if ((m = path.match(/^\/courses\/([^/]+)$/))) {
+    req.query = req.query || {};
+    req.query.id = m[1];
+    return handleClientCourseById(req, res);
+  }
+  if ((m = path.match(/^\/courses\/([^/]+)\/solicitar$/))) {
+    req.query = req.query || {};
+    req.query.id = m[1];
+    return handleSolicitar(req, res);
+  }
 
   res.status(404).json({ error: 'Not found' });
 };

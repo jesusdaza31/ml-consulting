@@ -46,6 +46,16 @@ function loadFunction(functionPath) {
   }
 }
 
+// Bridge: copia Express params (:id, :contenidoId) a req.query
+// para que los handlers funcionen igual que en Vercel
+function bridgeParams(req, res, fn) {
+  if (!fn) return res.status(500).json({ error: 'Function not found' });
+  req.query = req.query || {};
+  if (req.params.id) req.query.id = req.params.id;
+  if (req.params.contenidoId) req.query.contenidoId = req.params.contenidoId;
+  fn(req, res);
+}
+
 // Rutas de API que emulan Vercel Functions
 // Auth
 app.post('/api/auth/login', (req, res) => {
@@ -100,77 +110,53 @@ app.post('/api/admin/courses', (req, res) => {
 });
 
 app.get('/api/admin/courses/:id', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]');
-  if (fn) {
-    req.params.id = req.params.id;
-    fn(req, res);
-  } else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]'));
 });
 
 app.put('/api/admin/courses/:id', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]'));
 });
 
 app.delete('/api/admin/courses/:id', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]'));
 });
 
 // Admin - Courses - Inscribir
 app.post('/api/admin/courses/:id/inscribir', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]/inscribir');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/inscribir'));
 });
 
 // Admin - Courses - Progreso
 app.post('/api/admin/courses/:id/progreso', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]/progreso');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/progreso'));
 });
 
 // Admin - Courses - Aprobar
 app.post('/api/admin/courses/:id/aprobar', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]/aprobar');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/aprobar'));
 });
 
 // Admin - Courses - Rechazar
 app.post('/api/admin/courses/:id/rechazar', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]/rechazar');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/rechazar'));
 });
 
 // Admin - Courses - Contenido
 app.post('/api/admin/courses/:id/contenido', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]/contenido/index');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/contenido/index'));
 });
 
 app.put('/api/admin/courses/:id/contenido/:contenidoId', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]/contenido/[contenidoId]');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/contenido/[contenidoId]'));
 });
 
 app.delete('/api/admin/courses/:id/contenido/:contenidoId', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]/contenido/[contenidoId]');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/contenido/[contenidoId]'));
 });
 
 // Admin - Courses - Upload (presign para documentos)
 app.post('/api/admin/courses/:id/upload', (req, res) => {
-  const fn = loadFunction('./api/admin/courses/[id]/upload');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/upload'));
 });
 
 // Admin - Videos
@@ -193,9 +179,7 @@ app.post('/api/admin/videos/confirm', (req, res) => {
 });
 
 app.delete('/api/admin/videos/:id', (req, res) => {
-  const fn = loadFunction('./api/admin/videos/[id]');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/admin/videos/[id]'));
 });
 
 // Client - Me
@@ -213,15 +197,11 @@ app.get('/api/client/courses', (req, res) => {
 });
 
 app.get('/api/client/courses/:id', (req, res) => {
-  const fn = loadFunction('./api/client/courses/[id]');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/client/courses/[id]'));
 });
 
 app.post('/api/client/courses/:id/solicitar', (req, res) => {
-  const fn = loadFunction('./api/client/courses/[id]/solicitar');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/client/courses/[id]/solicitar'));
 });
 
 // Client - Catalog
@@ -233,16 +213,12 @@ app.get('/api/client/catalog', (req, res) => {
 
 // Client - Video
 app.get('/api/client/video/:id', (req, res) => {
-  const fn = loadFunction('./api/client/video/[id]');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/client/video/[id]'));
 });
 
 // Client - File
 app.get('/api/client/file/:id', (req, res) => {
-  const fn = loadFunction('./api/client/file/[id]');
-  if (fn) fn(req, res);
-  else res.status(500).json({ error: 'Function not found' });
+  bridgeParams(req, res, loadFunction('./api/client/file/[id]'));
 });
 
 // Archivos estáticos (frontend)
