@@ -2,12 +2,20 @@ const { supabaseAdmin } = require('./supabase');
 
 // Verificar token de Supabase y retornar usuario
 async function getUserFromToken(req) {
+  // 1. Header Authorization (peticiones fetch/XHR)
+  let token = null;
   const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return null;
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.substring(7);
   }
 
-  const token = authHeader.substring(7);
+  // 2. Fallback: query parameter ?token= (recursos multimedia: <img>, <video>, <iframe>)
+  if (!token && req.query && req.query.token) {
+    token = String(req.query.token);
+  }
+
+  if (!token) return null;
+
   const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
   if (error || !user) {
@@ -16,7 +24,6 @@ async function getUserFromToken(req) {
 
   return user;
 }
-
 // Middleware: requerir autenticación
 async function requireAuth(req, res, next) {
   const user = await getUserFromToken(req);

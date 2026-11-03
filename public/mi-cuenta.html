@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="icon" type="image/png" href="assets/logopestaña.png">
+
     <title>Mis cursos | ML Consulting Services</title>
 
     <meta name="description"
@@ -93,6 +95,49 @@
     </main>
 
     <div class="admin-toast" id="mcToast" hidden></div>
+
+    <!-- MODAL CONFIRMAR PAGO -->
+    <div class="mc-modal-backdrop" id="mcPaymentModal" hidden>
+        <div class="mc-modal-card">
+            <div class="mc-modal-head">
+                <h3 id="mcPaymentModalTitle"><i class="fa-solid fa-receipt"></i> Confirmar pago</h3>
+                <button type="button" class="mc-modal-close" id="mcPaymentModalClose" aria-label="Cerrar">&times;</button>
+            </div>
+            <form id="mcPaymentForm" class="mc-modal-body">
+                <input type="hidden" id="payCourseId">
+                <div id="payCourseInfo" class="mc-pay-course-info"></div>
+
+                <div class="mc-modal-field">
+                    <label for="payMetodo">Método de pago utilizado *</label>
+                    <select id="payMetodo" required>
+                        <option value="square">Tarjeta (Enlace de pago / Square)</option>
+                        <option value="stripe">Stripe</option>
+                        <option value="zelle">Zelle</option>
+                        <option value="transferencia">Transferencia bancaria</option>
+                        <option value="otro">Otro método</option>
+                    </select>
+                </div>
+
+                <div class="mc-modal-field">
+                    <label for="payReferencia">Número de comprobante / ID de transacción *</label>
+                    <input type="text" id="payReferencia" required placeholder="Ej: SQ-9182374, Transf #98234 o tu correo de pago">
+                    <small>Ingresa el código o referencia que recibiste al completar el pago.</small>
+                </div>
+
+                <div class="mc-modal-field">
+                    <label for="payNotas">Notas opcionales</label>
+                    <textarea id="payNotas" rows="2" placeholder="Cualquier información adicional para verificar tu pago rápidamente..."></textarea>
+                </div>
+
+                <div class="mc-modal-actions">
+                    <button type="button" class="mc-btn-sec" id="mcPaymentModalCancel">Cancelar</button>
+                    <button type="submit" class="mc-btn-ver" id="mcPaymentSubmitBtn">
+                        <i class="fa-solid fa-check"></i> Enviar confirmación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="auth.js"></script>

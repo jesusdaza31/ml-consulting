@@ -1,6 +1,7 @@
 const { requireAuth, requireAdmin } = require('../../../../lib/auth');
 const { supabaseAdmin } = require('../../../../lib/supabase');
 const { getCourseWithDetails, videoUrlToEmbed } = require('../../index');
+const crypto = require('crypto');
 
 function validateContenidoInput(b) {
   b = b || {};
@@ -13,7 +14,7 @@ function validateContenidoInput(b) {
 
   const tipo = String(b.tipo || '');
   const titulo = String(b.titulo || '').trim();
-  if (!['texto', 'video', 'documento'].includes(tipo)) {
+  if (!['texto', 'video', 'documento', 'imagen'].includes(tipo)) {
     return { error: 'Tipo de contenido invalido.' };
   }
   if (!titulo) return { error: 'El titulo es obligatorio.' };
@@ -53,13 +54,16 @@ function validateContenidoInput(b) {
       r2VideoId,
       r2Key,
       docFile: b.docFile || null,
-      docNombre: b.docNombre || null
+      docNombre: b.docNombre || null,
+      docMime: b.docMime || null,
+      docSize: b.docSize != null ? Number(b.docSize) : null,
+      docCategory: b.docCategory || null
     }
   };
 }
 
 module.exports = async (req, res) => {
-  if (req.method !== 'POST') {
+  if (req.method !== 'POST' && req.method !== 'PUT') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
@@ -74,6 +78,60 @@ module.exports = async (req, res) => {
         .single();
 
       if (!course) return res.status(404).json({ error: 'Curso no encontrado' });
+
+      if (req.method === 'PUT') {
+        const { items } = req.body || {};
+        if (!Array.isArray(items)) {
+          return res.status(400).json({ error: 'Se esperaba un arreglo de items.' });
+        }
+
+        const validWidths = [25, 33, 50, 66, 75, 100];
+        const updates = items.map(it => {
+          const updateData = { updated_at: new Date().toISOString() };
+          if (it.orden !== undefined && Number.isFinite(Number(it.orden))) {
+            updateData.orden = Number(it.orden);
+          }
+          if (it.width_pct !== undefined && validWidths.includes(Number(it.width_pct))) {
+            updateData.width_pct = Number(it.width_pct);
+          }
+          if (it.row_id !== undefined) {
+            updateData.row_id = it.row_id;
+          }
+          return supabaseAdmin
+            .from('contenido')
+            .update(updateData)
+            .eq('id', it.id)
+            .eq('course_id', courseId);
+        });
+
+        const results = await Promise.all(updates);
+        const err = results.find(r => r.error);
+        if (err && err.error) {
+          const errMsg = String(err.error.message || '');
+          if (errMsg.includes('width_pct') || errMsg.includes('row_id') || err.error.code === 'PGRST204' || errMsg.includes('schema cache')) {
+            const fallbackUpdates = items.map(it => {
+              const updateData = { updated_at: new Date().toISOString() };
+              if (it.orden !== undefined && Number.isFinite(Number(it.orden))) {
+                updateData.orden = Number(it.orden);
+              }
+              return supabaseAdmin
+                .from('contenido')
+                .update(updateData)
+                .eq('id', it.id)
+                .eq('course_id', courseId);
+            });
+            const fallbackResults = await Promise.all(fallbackUpdates);
+            const fallbackErr = fallbackResults.find(r => r.error);
+            if (fallbackErr && fallbackErr.error) {
+              return res.status(500).json({ error: fallbackErr.error.message });
+            }
+            return res.json({ ok: true, count: items.length, fallback: true });
+          }
+          return res.status(500).json({ error: err.error.message });
+        }
+
+        return res.json({ ok: true, count: items.length });
+      }
 
       if (req.body.r2VideoId) {
         const { data: video } = await supabaseAdmin
@@ -94,6 +152,10 @@ module.exports = async (req, res) => {
         return res.status(400).json({ error: 'Sube el archivo del documento primero.' });
       }
 
+      if (v.tipo === 'imagen' && !v.docFile) {
+        return res.status(400).json({ error: 'Selecciona o sube la imagen primero.' });
+      }
+
       const { data: maxOrden } = await supabaseAdmin
         .from('contenido')
         .select('orden')
@@ -102,7 +164,29 @@ module.exports = async (req, res) => {
         .limit(1)
         .maybeSingle();
 
-      const orden = (maxOrden ? maxOrden.orden : 0) + 1;
+      let orden;
+      if (req.body?.orden != null && Number.isFinite(Number(req.body.orden))) {
+        orden = Number(req.body.orden);
+        const { data: laterItems } = await supabaseAdmin
+          .from('contenido')
+          .select('id, orden')
+          .eq('course_id', courseId)
+          .gte('orden', orden)
+          .order('orden', { ascending: false });
+
+        if (laterItems && laterItems.length) {
+          for (const it of laterItems) {
+            await supabaseAdmin
+              .from('contenido')
+              .update({ orden: it.orden + 1 })
+              .eq('id', it.id);
+          }
+        }
+      } else {
+        orden = (maxOrden ? maxOrden.orden : 0) + 1;
+      }
+      const row_id = req.body?.row_id || crypto.randomUUID();
+      const width_pct = req.body?.width_pct || 100;
 
       const { data: item, error } = await supabaseAdmin
         .from('contenido')
@@ -116,7 +200,12 @@ module.exports = async (req, res) => {
           r2_key: v.r2Key,
           doc_file: v.docFile,
           doc_nombre: v.docNombre,
-          orden
+          doc_mime: v.docMime,
+          doc_size: v.docSize,
+          doc_category: v.docCategory,
+          orden,
+          row_id,
+          width_pct
         })
         .select()
         .single();
@@ -133,9 +222,14 @@ module.exports = async (req, res) => {
           videoUrl: item.tipo === 'video' ? item.video_url : null,
           r2VideoId: item.tipo === 'video' ? item.r2_video_id : null,
           r2Key: item.tipo === 'video' ? item.r2_key : null,
-          docFile: item.tipo === 'documento' ? item.doc_file : null,
-          docNombre: item.tipo === 'documento' ? item.doc_nombre : null,
-          orden: item.orden
+          docFile: (item.tipo === 'documento' || item.tipo === 'imagen') ? item.doc_file : null,
+          docNombre: (item.tipo === 'documento' || item.tipo === 'imagen') ? item.doc_nombre : null,
+          docMime: (item.tipo === 'documento' || item.tipo === 'imagen') ? item.doc_mime : null,
+          docSize: (item.tipo === 'documento' || item.tipo === 'imagen') ? item.doc_size : null,
+          docCategory: (item.tipo === 'documento' || item.tipo === 'imagen') ? item.doc_category : null,
+          orden: item.orden,
+          rowId: item.row_id,
+          widthPct: item.width_pct || 100
         },
         curso: detail.public
       });

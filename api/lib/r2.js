@@ -3,6 +3,20 @@ const { getSignedUrl } = require('@aws-sdk/s3-request-presigner');
 const crypto = require('crypto');
 const path = require('path');
 
+const MIME_BY_EXT = {
+  png:  'image/png',
+  jpg:  'image/jpeg',
+  jpeg: 'image/jpeg',
+  webp: 'image/webp',
+  gif:  'image/gif',
+  pdf:  'application/pdf',
+  doc:  'application/msword',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  txt:  'text/plain',
+  ppt:  'application/vnd.ms-powerpoint',
+  pptx: 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+};
+
 const ACCOUNT_ID = process.env.R2_ACCOUNT_ID || '';
 const ACCESS_KEY = process.env.R2_ACCESS_KEY_ID || '';
 const SECRET = process.env.R2_SECRET_ACCESS_KEY || '';
@@ -56,9 +70,15 @@ async function deleteObject(key) {
   }
 }
 
+function mimeFromExt(filename) {
+  const ext = path.extname(String(filename || '')).toLowerCase().slice(1);
+  return MIME_BY_EXT[ext] || 'application/octet-stream';
+}
+
 module.exports = {
   isConfigured,
   presignUpload,
   signGetUrl,
-  deleteObject
+  deleteObject,
+  mimeFromExt
 };

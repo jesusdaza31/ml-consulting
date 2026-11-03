@@ -71,18 +71,26 @@ module.exports = async (req, res) => {
         horas: course.horas,
         duracionDias: course.duracion_dias,
         inscripcion,
-        contenido: (contenido || []).map(c => ({
-          id: c.id,
-          tipo: c.tipo,
-          titulo: c.titulo,
-          texto: c.tipo === 'texto' ? c.texto : null,
-          videoUrl: c.tipo === 'video' ? c.video_url : null,
-          r2VideoId: c.tipo === 'video' ? c.r2_video_id : null,
-          r2Key: c.tipo === 'video' ? c.r2_key : null,
-          docFile: c.tipo === 'documento' ? c.doc_file : null,
-          docNombre: c.tipo === 'documento' ? c.doc_nombre : null,
-          orden: c.orden
-        })),
+        contenido: (contenido || []).map(c => {
+          const hasFile = c.tipo === 'documento' || c.tipo === 'imagen';
+          return {
+            id: c.id,
+            tipo: c.tipo,
+            titulo: c.titulo,
+            texto: c.tipo === 'texto' ? c.texto : null,
+            videoUrl: c.tipo === 'video' ? c.video_url : null,
+            r2VideoId: c.tipo === 'video' ? c.r2_video_id : null,
+            r2Key: c.tipo === 'video' ? c.r2_key : null,
+            docFile: hasFile ? c.doc_file : null,
+            docNombre: hasFile ? c.doc_nombre : null,
+            docMime: hasFile ? c.doc_mime : null,
+            docSize: hasFile ? c.doc_size : null,
+            docCategory: hasFile ? c.doc_category : null,
+            orden: c.orden,
+            rowId: c.row_id,
+            widthPct: c.width_pct || 100
+          };
+        }),
         price: course.price || null,
         paymentLink: course.payment_link || null
       }

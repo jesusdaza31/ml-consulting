@@ -1,6 +1,7 @@
 const { requireAuth } = require('../../lib/auth');
 const { supabaseAdmin } = require('../../lib/supabase');
 const r2 = require('../../lib/r2');
+const { inferCategory } = require('../../lib/file-validation');
 
 module.exports = async (req, res) => {
   if (req.method !== 'GET') {
@@ -19,8 +20,18 @@ module.exports = async (req, res) => {
       .eq('id', contenidoId)
       .maybeSingle();
 
-    if (!item || item.tipo !== 'documento' || !item.doc_file) {
-      return res.status(404).json({ error: 'Documento no encontrado' });
+    if (!item || !['documento', 'imagen'].includes(item.tipo) || !item.doc_file) {
+      return res.status(404).json({ error: 'Archivo no encontrado' });
+    }
+
+    // Para tipo 'imagen': siempre inline (sin Content-Disposition attachment)
+    if (item.tipo === 'imagen') {
+      try {
+        const url = await r2.signGetUrl(item.doc_file);
+        return res.redirect(302, url);
+      } catch (e) {
+        return res.status(500).json({ error: 'No se pudo generar la URL de la imagen.' });
+      }
     }
 
     if (!isAdmin) {
@@ -40,8 +51,16 @@ module.exports = async (req, res) => {
     }
 
     try {
+      const docMime = item.doc_mime || r2.mimeFromExt(item.doc_file);
+      const docCategory = item.doc_category || inferCategory(item.doc_file) || 'document';
       const url = await r2.signGetUrl(item.doc_file);
       const nombre = encodeURIComponent(item.doc_nombre || item.doc_file);
+
+      // Office docs and TXT: force download; images and PDFs: inline
+      if (docCategory === 'presentation' || (docCategory === 'document' && docMime !== 'application/pdf')) {
+        res.setHeader('Content-Disposition', 'attachment; filename="' + (item.doc_nombre || item.doc_file) + '"');
+      }
+
       res.redirect(302, url);
     } catch (e) {
       res.status(500).json({ error: 'No se pudo generar la URL del documento.' });

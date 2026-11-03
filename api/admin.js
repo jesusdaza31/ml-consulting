@@ -6,6 +6,14 @@ const handleVideosIndex = require('./admin/videos/index');
 const handlePresignVideo = require('./admin/videos/presign');
 const handleConfirmVideo = require('./admin/videos/confirm');
 const handleVideoDelete = require('./admin/videos/[id]');
+const handleImagesIndex = require('./admin/images/index');
+const handlePresignImage = require('./admin/images/presign');
+const handleConfirmImage = require('./admin/images/confirm');
+const handleImageDelete = require('./admin/images/[id]');
+const handleFilesIndex = require('./admin/files/index');
+const handlePresignFile = require('./admin/files/presign');
+const handleConfirmFile = require('./admin/files/confirm');
+const handleFileDelete = require('./admin/files/[id]');
 const handleCoursesIndex = require('./admin/courses/index');
 const handleCourseById = require('./admin/courses/[id]');
 const handleInscribir = require('./admin/courses/[id]/inscribir');
@@ -15,10 +23,18 @@ const handleProgreso = require('./admin/courses/[id]/progreso');
 const handleCourseUpload = require('./admin/courses/[id]/upload');
 const handleContenidoCreate = require('./admin/courses/[id]/contenido/index');
 const handleContenidoById = require('./admin/courses/[id]/contenido/[contenidoId]');
+const handleContenidoLayout = require('./admin/courses/[id]/contenido/[contenidoId]/layout');
+const handleContenidoFile = require('./admin/contenido/[id]/file');
 
 module.exports = async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const path = url.pathname.replace('/api/admin', '') || '/';
+
+  // Ensure query params from URL are preserved (token, etc.)
+  req.query = req.query || {};
+  url.searchParams.forEach((value, key) => {
+    if (!(key in req.query)) req.query[key] = value;
+  });
 
   // Dashboard
   if (path === '/dashboard') return handleDashboard(req, res);
@@ -38,6 +54,26 @@ module.exports = async (req, res) => {
     req.query = req.query || {};
     req.query.id = path.split('/')[2];
     return handleVideoDelete(req, res);
+  }
+
+  // Images
+  if (path === '/images') return handleImagesIndex(req, res);
+  if (path === '/images/presign') return handlePresignImage(req, res);
+  if (path === '/images/confirm') return handleConfirmImage(req, res);
+  if (path.match(/^\/images\/[^/]+$/)) {
+    req.query = req.query || {};
+    req.query.id = path.split('/')[2];
+    return handleImageDelete(req, res);
+  }
+
+  // Files
+  if (path === '/files') return handleFilesIndex(req, res);
+  if (path === '/files/presign') return handlePresignFile(req, res);
+  if (path === '/files/confirm') return handleConfirmFile(req, res);
+  if (path.match(/^\/files\/[^/]+$/)) {
+    req.query = req.query || {};
+    req.query.id = path.split('/')[2];
+    return handleFileDelete(req, res);
   }
 
   // Courses
@@ -68,11 +104,24 @@ module.exports = async (req, res) => {
     req.query.id = m[1];
     return handleContenidoCreate(req, res);
   }
+  if ((m = path.match(/^\/courses\/([^/]+)\/contenido\/([^/]+)\/layout$/))) {
+    req.query = req.query || {};
+    req.query.id = m[1];
+    req.query.contenidoId = m[2];
+    return handleContenidoLayout(req, res);
+  }
   if ((m = path.match(/^\/courses\/([^/]+)\/contenido\/([^/]+)$/))) {
     req.query = req.query || {};
     req.query.id = m[1];
     req.query.contenidoId = m[2];
     return handleContenidoById(req, res);
+  }
+
+  // Contenido file preview
+  if ((m = path.match(/^\/contenido\/([^/]+)\/file$/))) {
+    req.query = req.query || {};
+    req.query.id = m[1];
+    return handleContenidoFile(req, res);
   }
 
   res.status(404).json({ error: 'Not found' });

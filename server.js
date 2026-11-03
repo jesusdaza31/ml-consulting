@@ -34,6 +34,14 @@ const {
 } = require('./auth');
 const courses = require('./courses');
 const videos = require('./videos');
+const payments = require('./payments');
+
+// Supabase (opcional, para autenticación con token Bearer)
+let supabase = null;
+if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+  const { createClient } = require('@supabase/supabase-js');
+  supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+}
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -184,6 +192,54 @@ function requireAuth(req, res, next) {
   const user = findUserById(getUserIdFromRequest(req));
   if (!user) return res.status(401).json({ error: 'No autenticado' });
   req.user = user;
+  next();
+}
+
+// Middleware flexible: acepta cookie de sesión O token Bearer de Supabase
+async function requireAuthFlexible(req, res, next) {
+  let userId = null;
+  let userProfile = null;
+
+  // 1. Cookie de sesión
+  const sessionToken = parseCookie(req.headers.cookie)[SESSION_COOKIE];
+  userId = verifySessionToken(SESSION_SECRET, sessionToken);
+  if (userId) {
+    userProfile = findUserById(userId);
+  }
+
+  // 2. Token Bearer o query parameter (Supabase)
+  if (!userProfile && supabase) {
+    let token = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    } else if (req.query && req.query.token) {
+      token = req.query.token;
+    }
+
+    if (token) {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (!error && user) {
+          userId = user.id;
+          // Buscar perfil en Supabase
+          const { data: profile, error: profileError } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+          if (!profileError && profile) {
+            userProfile = { id: user.id, role: profile.role, name: user.user_metadata?.name || 'Usuario' };
+          }
+        }
+      } catch (e) {
+        // Ignorar errores de Supabase
+      }
+    }
+  }
+
+  if (!userProfile) return res.status(401).json({ error: 'No autenticado' });
+  req.user = userProfile;
   next();
 }
 
@@ -350,6 +406,134 @@ app.post('/api/admin/courses/:id/rechazar', requireAdmin, (req, res) => {
 });
 
 /* =============================================
+   API ADMIN: gestión de pagos
+============================================= */
+
+app.get('/api/admin/payments', requireAdmin, (req, res) => {
+  const names = clientsNameMap();
+  const all = payments.allPayments().map(p => {
+    const user = findUserById(p.clientId);
+    const course = courses.findCourse(p.courseId);
+    return {
+      id: p.id,
+      clientId: p.clientId,
+      clienteNombre: user ? user.name : (names[p.clientId] || '—'),
+      clienteEmail: user ? user.email : '',
+      courseId: p.courseId,
+      cursoNombre: course ? course.nombre : '—',
+      cursoTipo: course ? course.tipo : 'curso',
+      monto: p.monto,
+      moneda: p.moneda || 'USD',
+      metodo: p.metodo,
+      estado: p.estado,
+      referencia: p.referencia || '',
+      notas: p.notas || '',
+      createdAt: p.createdAt,
+      updatedAt: p.updatedAt
+    };
+  });
+  res.json({ payments: all, stats: payments.stats() });
+});
+
+app.post('/api/admin/payments', requireAdmin, (req, res) => {
+  const body = req.body || {};
+  const clientId = String(body.clientId || body.clienteId || '').trim();
+  const courseId = String(body.courseId || '').trim();
+  const monto = Number(body.monto) || 0;
+  const metodo = body.metodo || 'manual';
+  const estado = body.estado || 'completado';
+  const referencia = String(body.referencia || '').trim();
+  const notas = String(body.notas || '').trim();
+  const activarInscripcion = body.activarInscripcion !== false;
+
+  const course = courses.findCourse(courseId);
+  if (!course) return res.status(404).json({ error: 'Curso no encontrado' });
+
+  const cliente = findUserById(clientId);
+  if (!cliente || cliente.role !== 'client') {
+    return res.status(400).json({ error: 'Selecciona un cliente válido.' });
+  }
+
+  let inscripcion = null;
+  if (activarInscripcion && estado === 'completado') {
+    const r = courses.inscribir(course, cliente.id, course.tipo === 'servicio' ? course.horas : null, clientsNameMap());
+    if (r.error && r.error !== 'Ya inscrito') return res.status(r.status || 400).json({ error: r.error });
+    inscripcion = r.inscripcion;
+  }
+
+  const item = payments.createPayment({
+    clientId,
+    courseId,
+    monto,
+    metodo,
+    estado,
+    referencia,
+    notas
+  });
+
+  res.status(201).json({ ok: true, payment: item, inscripcion });
+});
+
+app.put('/api/admin/payments/:id', requireAdmin, (req, res) => {
+  const p = payments.findPayment(req.params.id);
+  if (!p) return res.status(404).json({ error: 'Pago no encontrado' });
+  const updated = payments.updatePayment(req.params.id, req.body || {});
+
+  if (req.body && req.body.estado === 'completado') {
+    const course = courses.findCourse(p.courseId);
+    if (course) {
+      courses.inscribir(course, p.clientId, course.tipo === 'servicio' ? course.horas : null, clientsNameMap());
+    }
+  }
+
+  res.json({ ok: true, payment: updated });
+});
+
+app.delete('/api/admin/payments/:id', requireAdmin, (req, res) => {
+  const ok = payments.deletePayment(req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Pago no encontrado' });
+  res.json({ ok: true });
+});
+
+app.post('/api/payments/confirm', requireAuthFlexible, (req, res) => {
+  const body = req.body || {};
+  const courseId = String(body.courseId || '').trim();
+  const course = courses.findCourse(courseId);
+  if (!course) return res.status(404).json({ error: 'Curso no encontrado' });
+
+  const autoActivar = req.user.role === 'admin' || body.autoActivate === true;
+  const estado = autoActivar ? 'completado' : 'pendiente';
+
+  const item = payments.createPayment({
+    clientId: req.user.id,
+    courseId,
+    monto: Number(body.monto) || Number(course.price) || 0,
+    metodo: body.metodo || 'square',
+    estado,
+    referencia: body.referencia || '',
+    notas: autoActivar ? 'Activación automática tras pago' : 'Pago reportado por cliente, pendiente de verificación'
+  });
+
+  let inscripcion = null;
+  if (autoActivar) {
+    const r = courses.inscribir(course, req.user.id, course.tipo === 'servicio' ? course.horas : null, clientsNameMap());
+    inscripcion = r.inscripcion;
+  } else {
+    courses.solicitarInscripcion(course, req.user.id);
+  }
+
+  res.json({
+    ok: true,
+    activated: autoActivar,
+    payment: item,
+    inscripcion,
+    message: autoActivar
+      ? '¡Pago procesado con éxito! Tu curso ha sido activado automáticamente.'
+      : 'Hemos recibido tu confirmación de pago. El equipo verificará tu acceso en breve.'
+  });
+});
+
+/* =============================================
    API ADMIN: contenido de cursos
 ============================================= */
 
@@ -363,6 +547,16 @@ app.post('/api/admin/courses/:id/contenido', requireAdmin, (req, res) => {
   const result = courses.addContenido(course, validated.value);
   if (result.error) return res.status(result.status || 400).json({ error: result.error });
   res.status(201).json({ contenido: result.item, curso: courses.getCoursePublic(course, clientsNameMap()) });
+});
+
+app.put('/api/admin/courses/:id/contenido', requireAdmin, (req, res) => {
+  const course = courses.findCourse(req.params.id);
+  if (!course) return res.status(404).json({ error: 'Curso no encontrado' });
+  const items = req.body?.items;
+  if (!Array.isArray(items)) return res.status(400).json({ error: 'Se esperaba un arreglo de items.' });
+  const result = courses.updateContenidoLayout(course, items);
+  if (result.error) return res.status(result.status || 400).json({ error: result.error });
+  res.json({ ok: true, count: result.count, curso: courses.getCoursePublic(course, clientsNameMap()) });
 });
 
 app.put('/api/admin/courses/:id/contenido/:contenidoId', requireAdmin, (req, res) => {
@@ -491,7 +685,7 @@ app.delete('/api/admin/videos/:id', requireAdmin, async (req, res) => {
    API CLIENTE: reproducción de videos R2
 ============================================= */
 
-app.get('/api/client/video/:id', requireAuth, async (req, res) => {
+app.get('/api/client/video/:id', requireAuthFlexible, async (req, res) => {
   const found = courses.findContenidoGlobal(req.params.id);
   if (!found || found.tipo !== 'video' || !found.r2Key) {
     return res.status(404).json({ error: 'Video no encontrado' });
@@ -553,10 +747,10 @@ app.get('/api/client/courses/:id', requireAuth, (req, res) => {
   res.json({ curso: courses.clientCourseDetail(req.user.id, course, isAdmin) });
 });
 
-app.get('/api/client/file/:id', requireAuth, (req, res) => {
+app.get('/api/client/file/:id', requireAuthFlexible, (req, res) => {
   const found = courses.findContenidoGlobal(req.params.id);
-  if (!found || found.tipo !== 'documento' || !found.docFile) {
-    return res.status(404).json({ error: 'Documento no encontrado' });
+  if (!found || !['documento', 'imagen'].includes(found.tipo) || !found.docFile) {
+    return res.status(404).json({ error: 'Archivo no encontrado' });
   }
   const isAdmin = req.user.role === 'admin';
   if (!isAdmin && !isClientEnrolled(found.curso, req.user.id)) {
@@ -565,7 +759,10 @@ app.get('/api/client/file/:id', requireAuth, (req, res) => {
   const filePath = path.join(UPLOADS_DIR, found.docFile);
   if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Archivo no encontrado' });
   const nombre = encodeURIComponent(found.docNombre || found.docFile);
-  res.setHeader('Content-Disposition', 'inline; filename*=UTF-8\'\'' + nombre);
+  // Images: inline; PDFs: inline; others: attachment
+  const ext = path.extname(found.docFile).toLowerCase();
+  const isInline = ['imagen'].includes(found.tipo) || ['.pdf', '.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext);
+  res.setHeader('Content-Disposition', (isInline ? 'inline' : 'attachment') + '; filename*=UTF-8\'\'' + nombre);
   res.sendFile(filePath);
 });
 

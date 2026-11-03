@@ -68,18 +68,26 @@ async function getCourseWithDetails(courseId) {
       inscritosActivos: activeCount,
       totalInscritos: (inscripciones || []).length,
       cuposLibres,
-      contenido: (contenido || []).map(c => ({
-        id: c.id,
-        tipo: c.tipo,
-        titulo: c.titulo,
-        texto: c.tipo === 'texto' ? c.texto : null,
-        videoUrl: c.tipo === 'video' ? c.video_url : null,
-        r2VideoId: c.tipo === 'video' ? c.r2_video_id : null,
-        r2Key: c.tipo === 'video' ? c.r2_key : null,
-        docFile: c.tipo === 'documento' ? c.doc_file : null,
-        docNombre: c.tipo === 'documento' ? c.doc_nombre : null,
-        orden: c.orden
-      })),
+      contenido: (contenido || []).map(c => {
+        const hasFile = c.tipo === 'documento' || c.tipo === 'imagen';
+        return {
+          id: c.id,
+          tipo: c.tipo,
+          titulo: c.titulo,
+          texto: c.tipo === 'texto' ? c.texto : null,
+          videoUrl: c.tipo === 'video' ? c.video_url : null,
+          r2VideoId: c.tipo === 'video' ? c.r2_video_id : null,
+          r2Key: c.tipo === 'video' ? c.r2_key : null,
+          docFile: hasFile ? c.doc_file : null,
+          docNombre: hasFile ? c.doc_nombre : null,
+          docMime: hasFile ? c.doc_mime : null,
+          docSize: hasFile ? c.doc_size : null,
+          docCategory: hasFile ? c.doc_category : null,
+          orden: c.orden,
+          rowId: c.row_id,
+          widthPct: c.width_pct || 100
+        };
+      }),
       inscritos: (inscripciones || []).map(i => {
         const vencido = i.estado === 'activo' && i.vencimiento && new Date(i.vencimiento).getTime() < Date.now();
         const horasRestantes = (course.tipo === 'servicio' && i.horas_asignadas)
@@ -142,10 +150,14 @@ function validateCourseInput(b) {
     }
   }
 
-  const paymentLink = String(b.paymentLink || '').trim();
+  let paymentLink = String(b.paymentLink || '').trim();
+  if (paymentLink && paymentLink.includes('<')) {
+    const m = paymentLink.match(/href=["'](https?:\/\/[^"']+)["']/i) || paymentLink.match(/(https?:\/\/[^\s"'<>]+)/i);
+    if (m && m[1]) paymentLink = m[1];
+  }
   if (paymentLink) {
     try { new URL(paymentLink); } catch {
-      return { error: 'El link de pago debe ser una URL válida.' };
+      return { error: 'El link de pago de Square debe ser una URL válida (ej: https://square.link/u/...)' };
     }
   }
 
@@ -185,7 +197,7 @@ async function handleCoursesIndex(req, res) {
         const courseIds = courses.map(c => c.id);
         const [{ data: inscripciones }, { data: contenido }, { data: profiles }] = await Promise.all([
           supabaseAdmin.from('inscripciones').select('course_id, client_id, estado, vencimiento, horas_asignadas, horas_usadas').in('course_id', courseIds.length ? courseIds : ['00000000-0000-0000-0000-000000000000']),
-          supabaseAdmin.from('contenido').select('course_id, id, tipo, titulo, texto, video_url, r2_video_id, r2_key, doc_file, doc_nombre, orden').in('course_id', courseIds.length ? courseIds : ['00000000-0000-0000-0000-000000000000']),
+          supabaseAdmin.from('contenido').select('course_id, id, tipo, titulo, texto, video_url, r2_video_id, r2_key, doc_file, doc_nombre, doc_mime, doc_size, doc_category, orden').in('course_id', courseIds.length ? courseIds : ['00000000-0000-0000-0000-000000000000']),
           supabaseAdmin.from('profiles').select('id, name')
         ]);
 
@@ -233,18 +245,24 @@ async function handleCoursesIndex(req, res) {
             inscritosActivos: activeCount,
             totalInscritos: courseInsc.length,
             cuposLibres,
-            contenido: courseCont.map(c => ({
-              id: c.id,
-              tipo: c.tipo,
-              titulo: c.titulo,
-              texto: c.tipo === 'texto' ? c.texto : null,
-              videoUrl: c.tipo === 'video' ? c.video_url : null,
-              r2VideoId: c.tipo === 'video' ? c.r2_video_id : null,
-              r2Key: c.tipo === 'video' ? c.r2_key : null,
-              docFile: c.tipo === 'documento' ? c.doc_file : null,
-              docNombre: c.tipo === 'documento' ? c.doc_nombre : null,
-              orden: c.orden
-            })),
+            contenido: courseCont.map(c => {
+              const hasFile = c.tipo === 'documento' || c.tipo === 'imagen';
+              return {
+                id: c.id,
+                tipo: c.tipo,
+                titulo: c.titulo,
+                texto: c.tipo === 'texto' ? c.texto : null,
+                videoUrl: c.tipo === 'video' ? c.video_url : null,
+                r2VideoId: c.tipo === 'video' ? c.r2_video_id : null,
+                r2Key: c.tipo === 'video' ? c.r2_key : null,
+                docFile: hasFile ? c.doc_file : null,
+                docNombre: hasFile ? c.doc_nombre : null,
+                docMime: hasFile ? c.doc_mime : null,
+                docSize: hasFile ? c.doc_size : null,
+                docCategory: hasFile ? c.doc_category : null,
+                orden: c.orden
+              };
+            }),
             inscritos: courseInsc.map(i => {
               const vencido = i.estado === 'activo' && i.vencimiento && new Date(i.vencimiento).getTime() < Date.now();
               const horasRestantes = (course.tipo === 'servicio' && i.horas_asignadas)

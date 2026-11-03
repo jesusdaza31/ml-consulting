@@ -113,18 +113,33 @@ function resultadoBlock(c) {
 }
 
 function catalogAction(c) {
-  if (c.paymentLink) {
-    return '<a href="' + escapeHtml(c.paymentLink) + '" target="_blank" rel="noopener" class="mc-btn-ver mc-btn-inscrito" style="display:inline-block;text-decoration:none;text-align:center;">Pagar e inscribirse</a>';
-  }
   if (c.estado === 'activo') {
     return '<button type="button" class="mc-btn-ver mc-btn-inscrito" data-open="' + c.id + '">' +
       '<i class="fa-solid fa-circle-check"></i> Inscrito · Ver curso <i class="fa-solid fa-arrow-right"></i></button>';
   }
   if (c.estado === 'pendiente') {
-    return '<button type="button" class="mc-btn-disabled" disabled><i class="fa-solid fa-clock"></i> En revisión</button>';
+    return '<button type="button" class="mc-btn-disabled" disabled><i class="fa-solid fa-clock"></i> En revisión / Verificando acceso</button>';
   }
   if (c.estado === 'completado') {
     return '<button type="button" class="mc-btn-disabled" disabled><i class="fa-solid fa-circle-check"></i> Completado</button>';
+  }
+  if (c.paymentLink) {
+    const priceText = (c.price != null && c.price !== '') ? ' · USD $' + Number(c.price).toFixed(2) : '';
+    return '<div class="mc-square-cta-wrap">' +
+      '<a href="' + escapeHtml(c.paymentLink) + '" target="_blank" rel="noopener" class="mc-btn-square" title="Pagar de forma segura en Square">' +
+        '<span class="mc-square-btn-icon"><i class="fa-solid fa-credit-card"></i></span>' +
+        '<span class="mc-square-btn-text">' +
+          '<strong>Pagar con Square' + escapeHtml(priceText) + '</strong>' +
+          '<small><i class="fa-solid fa-lock"></i> Pasarela de pago segura</small>' +
+        '</span>' +
+        '<i class="fa-solid fa-arrow-up-right-from-square mc-square-external"></i>' +
+      '</a>' +
+      '<div class="mc-square-cta-sub">' +
+        '<button type="button" class="mc-btn-report-pay" data-report-payment="' + c.id + '">' +
+          '<i class="fa-solid fa-receipt"></i> ¿Ya pagaste en Square? Confirmar pago' +
+        '</button>' +
+      '</div>' +
+    '</div>';
   }
   if (c.estado === 'cancelado') {
     return '<button type="button" class="mc-btn-ver" data-solicitar="' + c.id + '">Solicitar de nuevo</button>';
@@ -255,12 +270,22 @@ function openCatDetail(id) {
 
 /* ---------- Detalle (inscrito) ---------- */
 
+function authUrl(url) {
+  const token = localStorage.getItem('sb_access_token');
+  if (!token) return url;
+  return url + (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
+}
+
 function contentItemHtml(item) {
   const meta = {
     texto: { icon: 'fa-file-lines', label: 'Texto' },
     video: { icon: 'fa-circle-play', label: 'Video' },
-    documento: { icon: 'fa-file-pdf', label: 'Documento' }
+    documento: { icon: 'fa-file-pdf', label: 'Documento' },
+    imagen: { icon: 'fa-image', label: 'Imagen' }
   }[item.tipo] || { icon: 'fa-file', label: item.tipo };
+
+  const widthPct = item.widthPct || 100;
+  const widthClass = 'mc-width-' + widthPct;
 
   let body = '';
   if (item.tipo === 'texto') {
@@ -272,24 +297,77 @@ function contentItemHtml(item) {
     if (item.r2VideoId) {
       // Video privado en R2: se reproduce vía /api/client/video/:id (302 → URL firmada)
       body = '<div class="mc-video"><video controls preload="metadata" playsinline>' +
-        '<source src="/api/client/video/' + item.id + '">' +
+        '<source src="' + authUrl('/api/client/video/' + item.id) + '">' +
         'Tu navegador no soporta video HTML5.</video></div>';
     } else {
       body = '<div class="mc-video"><iframe src="' + escapeHtml(item.videoUrl) +
         '" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>';
     }
+  } else if (item.tipo === 'imagen') {
+    if (item.docFile) {
+      body = '<div class="mc-doc-preview">' +
+        '<img src="' + authUrl('/api/client/file/' + item.id) + '" loading="lazy" alt="' + escapeHtml(item.docNombre || '') + '">' +
+        '</div>';
+    } else {
+      body = '<div class="mc-doc-preview"><p class="mc-doc-note">Imagen no disponible</p></div>';
+    }
   } else if (item.tipo === 'documento') {
-    body = '<div class="mc-doc">' +
-      '<div class="mc-doc-info">' +
-        '<strong>' + escapeHtml(item.docNombre || item.docFile || 'Documento') + '</strong>' +
-        '<small>Archivo adjunto de este curso</small>' +
-      '</div>' +
-      '<a class="mc-doc-link" href="/api/client/file/' + item.id + '" target="_blank" rel="noopener">' +
-        '<i class="fa-solid fa-download"></i> Ver documento</a>' +
-    '</div>';
+    const docCategory = item.docCategory || 'document';
+    const docMime = item.docMime || '';
+    const docFile = item.docFile || '';
+    const docNombre = item.docNombre || docFile || 'Documento';
+    const fileUrl = authUrl('/api/client/file/' + item.id);
+    // Detectar PDF por mime o por extensión del nombre
+    const isPdf = docMime === 'application/pdf' || /\.pdf$/i.test(docNombre) || /\.pdf$/i.test(docFile);
+    if (docCategory === 'image') {
+      // Inline image preview
+      body = '<div class="mc-doc-preview">' +
+        '<img src="' + fileUrl + '" loading="lazy" alt="' + escapeHtml(docNombre) + '">' +
+        '</div>';
+    } else if (isPdf) {
+      // Inline PDF preview with iframe + fallback
+      body = '<div class="mc-doc-preview">' +
+        '<iframe src="' + fileUrl + '" loading="lazy" title="' + escapeHtml(docNombre) + '">' +
+        '</iframe>' +
+        '<a href="' + fileUrl + '" download="' + escapeHtml(docNombre) + '" class="mc-doc-link">' +
+          '<i class="fa-solid fa-download"></i> Descargar PDF' +
+        '</a>' +
+        '</div>';
+    } else if (docCategory === 'presentation') {
+      // PowerPoint download with icon
+      body = '<div class="mc-doc-download">' +
+        '<div class="mc-doc-info">' +
+          '<strong>' + escapeHtml(docNombre) + '</strong>' +
+          '<small>Presentación</small>' +
+        '</div>' +
+        '<a class="mc-doc-link" href="' + fileUrl + '" download="' + escapeHtml(docNombre) + '" target="_blank" rel="noopener">' +
+          '<i class="fa-brands fa-microsoft-powerpoint"></i> Descargar presentación</a>' +
+        '</div>';
+    } else if (docCategory === 'document') {
+      // Word / TXT download
+      const icon = docMime && docMime.includes('word') ? 'fa-file-word' : 'fa-file-lines';
+      body = '<div class="mc-doc-download">' +
+        '<div class="mc-doc-info">' +
+          '<strong>' + escapeHtml(docNombre) + '</strong>' +
+          '<small>Documento</small>' +
+        '</div>' +
+        '<a class="mc-doc-link" href="' + fileUrl + '" download="' + escapeHtml(docNombre) + '" target="_blank" rel="noopener">' +
+          '<i class="fa-solid ' + icon + '"></i> Descargar documento</a>' +
+        '</div>';
+    } else {
+      // Generic fallback
+      body = '<div class="mc-doc-download">' +
+        '<div class="mc-doc-info">' +
+          '<strong>' + escapeHtml(docNombre) + '</strong>' +
+          '<small>Archivo adjunto</small>' +
+        '</div>' +
+        '<a class="mc-doc-link" href="' + fileUrl + '" target="_blank" rel="noopener">' +
+          '<i class="fa-solid fa-download"></i> Ver documento</a>' +
+        '</div>';
+    }
   }
 
-  return '<div class="mc-content-item">' +
+  return '<div class="mc-content-item ' + widthClass + '">' +
     '<div class="mc-content-head">' +
       '<span class="mc-content-icon ' + item.tipo + '"><i class="fa-solid ' + meta.icon + '"></i></span>' +
       '<div><small>' + meta.label + '</small><strong>' + escapeHtml(item.titulo) + '</strong></div>' +
@@ -320,8 +398,41 @@ async function openDetail(id) {
       '</div>'
     : '';
 
-  const contenido = (c.contenido && c.contenido.length)
-    ? '<div class="mc-content-list">' + c.contenido.map(contentItemHtml).join('') + '</div>'
+function groupContenidoIntoRows(items) {
+  if (!items || !items.length) return [];
+  const sorted = items.slice().sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
+  const rows = [];
+  let currentRow = null;
+  let currentWidth = 0;
+
+  sorted.forEach(item => {
+    const w = Number(item.widthPct) || 100;
+    if (currentRow && (currentWidth + w <= 100.5)) {
+      currentRow.items.push(item);
+      currentWidth += w;
+    } else {
+      currentRow = {
+        id: item.rowId || ('row_' + item.id),
+        items: [item]
+      };
+      rows.push(currentRow);
+      currentWidth = w >= 100 ? 100 : w;
+    }
+  });
+
+  return rows;
+}
+
+  // Agrupar contenido en filas automáticamente según el ancho
+  const contenidoItems = c.contenido || [];
+  const rows = groupContenidoIntoRows(contenidoItems);
+
+  const contenido = rows.length
+    ? '<div class="mc-content-list">' + rows.map(row =>
+        '<div class="mc-content-row"><div class="mc-content-row-inner">' +
+          row.items.map(contentItemHtml).join('') +
+        '</div></div>'
+      ).join('') + '</div>'
     : '<p class="mc-no-content">Este curso aún no tiene contenido publicado.</p>';
 
   $('mcDetail').innerHTML =
@@ -365,20 +476,109 @@ async function logout() {
 
 /* ---------- Eventos ---------- */
 
+function openPaymentModal(courseId) {
+  const c = state.catalog.find(x => x.id === courseId) || state.courses.find(x => x.id === courseId);
+  if (!c) return;
+  $('payCourseId').value = c.id;
+  const priceText = c.price != null ? ' | Precio: USD $' + c.price.toFixed(2) : '';
+  $('payCourseInfo').innerHTML = '<strong>' + escapeHtml(c.nombre) + '</strong>' +
+    '<br><span style="font-size:0.85rem;color:var(--text-muted);">' + escapeHtml(c.tipo === 'servicio' ? 'Servicio / Asesoría' : 'Curso') + priceText + '</span>';
+  $('payReferencia').value = '';
+  $('payNotas').value = '';
+  $('mcPaymentModal').hidden = false;
+  $('payReferencia').focus();
+}
+
+function closePaymentModal() {
+  $('mcPaymentModal').hidden = true;
+}
+
+async function submitPaymentReport(e) {
+  e.preventDefault();
+  const courseId = $('payCourseId').value;
+  const metodo = $('payMetodo').value;
+  const referencia = $('payReferencia').value.trim();
+  const notas = $('payNotas').value.trim();
+
+  if (!referencia) {
+    toast('Por favor ingresa la referencia o comprobante del pago.', 'error');
+    return;
+  }
+
+  const submitBtn = $('mcPaymentSubmitBtn');
+  submitBtn.disabled = true;
+  submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Enviando...';
+
+  try {
+    const res = await api('/api/payments/confirm', {
+      method: 'POST',
+      body: JSON.stringify({
+        courseId,
+        metodo,
+        referencia,
+        notas
+      })
+    });
+
+    if (!res.ok) {
+      toast(res.data.error || 'No se pudo registrar la confirmación del pago.', 'error');
+      return;
+    }
+
+    closePaymentModal();
+    toast(res.data.message || 'Confirmación de pago registrada con éxito.');
+    await loadLists();
+
+    if (res.data.activated) {
+      switchMcTab('miscursos');
+    } else {
+      showView(state.currentTab);
+    }
+  } catch (err) {
+    toast('Error de conexión al enviar el comprobante.', 'error');
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Enviar confirmación';
+  }
+}
+
 function handleCardClick(e) {
   const open = e.target.closest('[data-open]');
   if (open) { openDetail(open.dataset.open); return; }
+  const rep = e.target.closest('[data-report-payment]');
+  if (rep) { openPaymentModal(rep.dataset.reportPayment); return; }
   const sol = e.target.closest('[data-solicitar]');
   if (sol) { solicitar(sol.dataset.solicitar); }
 }
 
 function handleCatalogClick(e) {
+  const rep = e.target.closest('[data-report-payment]');
+  if (rep) {
+    e.stopPropagation();
+    openPaymentModal(rep.dataset.reportPayment);
+    return;
+  }
+  const squareBtn = e.target.closest('.mc-btn-square');
+  if (squareBtn) {
+    e.stopPropagation();
+    return;
+  }
   const sol = e.target.closest('[data-solicitar]');
-  if (sol) { solicitar(sol.dataset.solicitar); return; }
+  if (sol) {
+    e.stopPropagation();
+    solicitar(sol.dataset.solicitar);
+    return;
+  }
   const open = e.target.closest('[data-open]');
-  if (open) { openDetail(open.dataset.open); return; }
+  if (open) {
+    e.stopPropagation();
+    openDetail(open.dataset.open);
+    return;
+  }
   const cat = e.target.closest('[data-open-cat]');
-  if (cat) { openCatDetail(cat.dataset.openCat); }
+  if (cat) {
+    openCatDetail(cat.dataset.openCat);
+  }
 }
 
 /* ---------- Init ---------- */
@@ -403,8 +603,19 @@ async function init() {
     });
     $('mcCourses').addEventListener('click', handleCardClick);
     $('mcCatalog').addEventListener('click', handleCatalogClick);
+    if ($('catDetail')) {
+      $('catDetail').addEventListener('click', handleCatalogClick);
+    }
     $('mcCourses').addEventListener('click', e => {
       if (e.target.closest('.mc-goto-catalogo')) switchMcTab('catalogo');
+    });
+
+    // Modal de pago
+    $('mcPaymentModalClose').addEventListener('click', closePaymentModal);
+    $('mcPaymentModalCancel').addEventListener('click', closePaymentModal);
+    $('mcPaymentForm').addEventListener('submit', submitPaymentReport);
+    $('mcPaymentModal').addEventListener('click', e => {
+      if (e.target === $('mcPaymentModal')) closePaymentModal();
     });
 
     await loadLists();

@@ -10,6 +10,12 @@ module.exports = async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
   const path = url.pathname.replace('/api/client', '') || '/';
 
+  // Ensure query params from URL are preserved (token, etc.)
+  req.query = req.query || {};
+  url.searchParams.forEach((value, key) => {
+    if (!(key in req.query)) req.query[key] = value;
+  });
+
   // Catalog
   if (path === '/catalog') return handleCatalog(req, res);
 
@@ -19,12 +25,10 @@ module.exports = async (req, res) => {
   // File and Video — dynamic /:id
   let m;
   if ((m = path.match(/^\/file\/([^/]+)$/))) {
-    req.query = req.query || {};
     req.query.id = m[1];
     return handleFile(req, res);
   }
   if ((m = path.match(/^\/video\/([^/]+)$/))) {
-    req.query = req.query || {};
     req.query.id = m[1];
     return handleVideo(req, res);
   }

@@ -1978,6 +1978,19 @@ footer::before{
     margin-bottom:0;
 }
 
+.footer-address{
+    margin-top:14px;
+    font-size:.88rem;
+    color:rgba(255,255,255,.75);
+    display:flex;
+    align-items:center;
+    gap:8px;
+}
+
+.footer-address i{
+    color:var(--gold-light);
+}
+
 .footer-title{
     display:block;
     font-size:.8rem;
@@ -2583,6 +2596,10 @@ footer::before{
         flex-direction:column;
         align-items:center;
         text-align:center;
+    }
+
+    .footer-address{
+        justify-content:center;
     }
 
     .footer-social{

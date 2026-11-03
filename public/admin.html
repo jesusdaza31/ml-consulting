@@ -5,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <link rel="icon" type="image/png" href="assets/logopestaña.png">
+
     <title>Panel de administración | ML Consulting Services</title>
 
     <meta name="description"
@@ -52,8 +54,18 @@
                     <i class="fa-solid fa-bell"></i> Solicitudes
                     <span class="admin-nav-badge" id="pendingCount">0</span>
                 </button>
+                <button type="button" class="admin-nav-item" data-tab="pagos">
+                    <i class="fa-solid fa-credit-card"></i> Pagos
+                    <span class="admin-nav-badge" id="pendingPaymentsCount" style="display:none">0</span>
+                </button>
                 <button type="button" class="admin-nav-item" data-tab="videos">
                     <i class="fa-solid fa-video"></i> Videos
+                </button>
+                <button type="button" class="admin-nav-item" data-tab="imagenes">
+                    <i class="fa-solid fa-image"></i> Imágenes
+                </button>
+                <button type="button" class="admin-nav-item" data-tab="archivos">
+                    <i class="fa-solid fa-file-lines"></i> Archivos
                 </button>
             </nav>
 
@@ -144,10 +156,96 @@
 
             </section>
 
+            <!-- PAGOS -->
+            <section class="admin-panel" id="panel-pagos">
+
+                <div class="stat-grid" id="paymentStats">
+                    <div class="stat-card stat-v1">
+                        <span class="stat-icon"><i class="fa-solid fa-dollar-sign"></i></span>
+                        <div class="stat-value" id="statRecaudado">$0.00</div>
+                        <div class="stat-label">Total recaudado</div>
+                    </div>
+                    <div class="stat-card stat-v2">
+                        <span class="stat-icon"><i class="fa-solid fa-circle-check"></i></span>
+                        <div class="stat-value" id="statCompletados">0</div>
+                        <div class="stat-label">Pagos completados</div>
+                    </div>
+                    <div class="stat-card stat-v3">
+                        <span class="stat-icon"><i class="fa-solid fa-clock"></i></span>
+                        <div class="stat-value" id="statPendientes">0</div>
+                        <div class="stat-label">Pagos pendientes</div>
+                    </div>
+                    <div class="stat-card stat-v4">
+                        <span class="stat-icon"><i class="fa-solid fa-hand-holding-dollar"></i></span>
+                        <div class="stat-value" id="statManuales">0</div>
+                        <div class="stat-label">Accesos manuales</div>
+                    </div>
+                </div>
+
+                <div class="admin-toolbar" style="justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1;min-width:280px;">
+                        <input type="search" id="paymentsSearch" class="admin-input" style="max-width:320px;"
+                               placeholder="Buscar por cliente, curso o ref…" aria-label="Buscar pagos">
+                        <select id="paymentsStatusFilter" class="admin-input" style="width:auto;min-width:140px;">
+                            <option value="all">Todos los estados</option>
+                            <option value="completado">Completados / Aprobados</option>
+                            <option value="pendiente">Pendientes de verificar</option>
+                            <option value="fallido">Fallidos / Cancelados</option>
+                        </select>
+                        <select id="paymentsMethodFilter" class="admin-input" style="width:auto;min-width:140px;">
+                            <option value="all">Todos los métodos</option>
+                            <option value="square">Square / Tarjeta</option>
+                            <option value="transferencia">Transferencia bancaria</option>
+                            <option value="zelle">Zelle</option>
+                            <option value="efectivo">Efectivo</option>
+                            <option value="manual">Manual / Cortesía</option>
+                        </select>
+                    </div>
+                    <button type="button" class="admin-btn admin-btn-primary" id="addPaymentBtn">
+                        <i class="fa-solid fa-plus"></i> Registrar pago manual
+                    </button>
+                </div>
+
+                <div class="admin-table-wrap">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Cliente</th>
+                                <th>Curso / Servicio</th>
+                                <th>Monto</th>
+                                <th>Método</th>
+                                <th>Estado</th>
+                                <th>Referencia</th>
+                                <th>Fecha</th>
+                                <th style="text-align:right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsBody">
+                            <tr><td colspan="8" class="admin-loading">Cargando pagos…</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+            </section>
+
             <!-- VIDEOS -->
             <section class="admin-panel" id="panel-videos">
 
                 <div id="videosState"></div>
+
+            </section>
+
+            <!-- IMÁGENES -->
+            <section class="admin-panel" id="panel-imagenes">
+
+                <div id="imagesState"></div>
+
+            </section>
+
+            <!-- ARCHIVOS -->
+            <section class="admin-panel" id="panel-archivos">
+
+                <div id="filesState"></div>
 
             </section>
 

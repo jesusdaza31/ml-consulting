@@ -111,11 +111,124 @@ CREATE TABLE IF NOT EXISTS videos (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Agregar columnas de metadata y layout a contenido
+ALTER TABLE contenido
+  ADD COLUMN IF NOT EXISTS doc_mime TEXT,
+  ADD COLUMN IF NOT EXISTS doc_size INTEGER,
+  ADD COLUMN IF NOT EXISTS doc_category TEXT,
+  ADD COLUMN IF NOT EXISTS row_id UUID DEFAULT NULL,
+  ADD COLUMN IF NOT EXISTS width_pct INTEGER DEFAULT 100 CHECK (width_pct IN (25, 33, 50, 66, 75, 100));
+
+-- Crear función de inferencia para backward compatibility
+CREATE OR REPLACE FUNCTION infer_doc_category(doc_file TEXT)
+RETURNS TEXT AS $$
+DECLARE
+  ext TEXT;
+BEGIN
+  ext := LOWER(SPLIT_PART(doc_file, '.', -1));
+  RETURN CASE
+    WHEN ext IN ('png','jpg','jpeg','webp','gif') THEN 'image'
+    WHEN ext IN ('pdf','doc','docx','txt') THEN 'document'
+    WHEN ext IN ('ppt','pptx') THEN 'presentation'
+    ELSE 'document'
+  END;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+-- Backfill: inferir categoría para registros existentes con doc_file
+UPDATE contenido
+SET doc_category = infer_doc_category(doc_file),
+    doc_mime = CASE
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('pdf') THEN 'application/pdf'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('doc') THEN 'application/msword'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('docx') THEN 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('txt') THEN 'text/plain'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('png') THEN 'image/png'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('jpg','jpeg') THEN 'image/jpeg'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('webp') THEN 'image/webp'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('gif') THEN 'image/gif'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('ppt') THEN 'application/vnd.ms-powerpoint'
+      WHEN SPLIT_PART(doc_file, '.', -1) IN ('pptx') THEN 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+      ELSE 'application/octet-stream'
+    END
+WHERE tipo = 'documento' AND doc_file IS NOT NULL AND doc_category IS NULL;
+
 -- Agregar foreign key después de crear la tabla
 ALTER TABLE contenido
   DROP CONSTRAINT IF EXISTS contenido_r2_video_id_fkey,
   ADD CONSTRAINT contenido_r2_video_id_fkey
   FOREIGN KEY (r2_video_id) REFERENCES videos(id) ON DELETE SET NULL;
+
+-- =============================================
+-- TABLA: images (biblioteca de imágenes)
+-- =============================================
+CREATE TABLE IF NOT EXISTS images (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  size BIGINT NOT NULL,
+  mime TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_images_key ON images(key);
+CREATE INDEX IF NOT EXISTS idx_images_created_at ON images(created_at DESC);
+
+-- RLS para images
+ALTER TABLE images ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view images"
+  ON images FOR SELECT
+  USING (true);
+
+CREATE POLICY "Admins can manage images"
+  ON images FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- =============================================
+-- TABLA: files (biblioteca de archivos)
+-- =============================================
+CREATE TABLE IF NOT EXISTS files (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  key TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  size BIGINT NOT NULL,
+  mime TEXT NOT NULL,
+  category TEXT NOT NULL CHECK (category IN ('document', 'presentation')),
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_files_key ON files(key);
+CREATE INDEX IF NOT EXISTS idx_files_category ON files(category);
+CREATE INDEX IF NOT EXISTS idx_files_created_at ON files(created_at DESC);
+
+-- RLS para files
+ALTER TABLE files ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Anyone can view files"
+  ON files FOR SELECT
+  USING (true);
+
+CREATE POLICY "Admins can manage files"
+  ON files FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+-- =============================================
+-- Ampliar CHECK de tipo en contenido para soportar 'imagen'
+-- =============================================
+ALTER TABLE contenido DROP CONSTRAINT IF EXISTS contenido_tipo_check;
+ALTER TABLE contenido ADD CONSTRAINT contenido_tipo_check
+  CHECK (tipo IN ('texto', 'video', 'documento', 'imagen'));
 
 -- =============================================
 -- ÍNDICES
@@ -288,3 +401,42 @@ SELECT
 FROM courses c
 LEFT JOIN inscripciones i ON c.id = i.course_id
 GROUP BY c.id;
+
+-- =============================================
+-- TABLA: payments (gestión de pagos)
+-- =============================================
+CREATE TABLE IF NOT EXISTS payments (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  client_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+  course_id UUID NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  monto NUMERIC(10, 2) NOT NULL DEFAULT 0.00,
+  moneda TEXT NOT NULL DEFAULT 'USD',
+  metodo TEXT NOT NULL DEFAULT 'manual' CHECK (metodo IN ('square', 'tarjeta', 'transferencia', 'efectivo', 'zelle', 'manual', 'cortesia', 'stripe', 'otro')),
+  estado TEXT NOT NULL DEFAULT 'completado' CHECK (estado IN ('completado', 'pendiente', 'fallido', 'reembolsado')),
+  referencia TEXT DEFAULT '',
+  notas TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_payments_client_id ON payments(client_id);
+CREATE INDEX IF NOT EXISTS idx_payments_course_id ON payments(course_id);
+CREATE INDEX IF NOT EXISTS idx_payments_estado ON payments(estado);
+CREATE INDEX IF NOT EXISTS idx_payments_created_at ON payments(created_at DESC);
+
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Admins can manage payments" ON payments;
+CREATE POLICY "Admins can manage payments"
+  ON payments FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );
+
+DROP POLICY IF EXISTS "Clients can view their own payments" ON payments;
+CREATE POLICY "Clients can view their own payments"
+  ON payments FOR SELECT
+  USING (client_id = auth.uid());

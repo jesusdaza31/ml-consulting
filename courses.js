@@ -96,10 +96,14 @@ function validateCourseInput(b) {
     }
   }
 
-  const paymentLink = String((b && b.paymentLink) || '').trim();
+  let paymentLink = String((b && b.paymentLink) || '').trim();
+  if (paymentLink && paymentLink.includes('<')) {
+    const m = paymentLink.match(/href=["'](https?:\/\/[^"']+)["']/i) || paymentLink.match(/(https?:\/\/[^\s"'<>]+)/i);
+    if (m && m[1]) paymentLink = m[1];
+  }
   if (paymentLink) {
     try { new URL(paymentLink); } catch {
-      return { error: 'El link de pago debe ser una URL válida.' };
+      return { error: 'El link de pago de Square debe ser una URL válida (ej: https://square.link/u/...)' };
     }
   }
 
@@ -209,7 +213,7 @@ function validateContenidoInput(b) {
 
   const tipo = String(b.tipo || '');
   const titulo = String(b.titulo || '').trim();
-  if (!['texto', 'video', 'documento'].includes(tipo)) {
+  if (!['texto', 'video', 'documento', 'imagen'].includes(tipo)) {
     return { error: 'Tipo de contenido inválido.' };
   }
   if (!titulo) return { error: 'El título es obligatorio.' };
@@ -228,7 +232,6 @@ function validateContenidoInput(b) {
     const rawUrl = String(b.videoUrl || '').trim();
     if (r2Id && rawUrl) return { error: 'Elige una sola fuente (YouTube o video de la biblioteca).' };
     if (r2Id) {
-      // Video de la biblioteca R2 (la existencia la valida server.js)
       if (!r2K) return { error: 'Falta la referencia del video.' };
       r2VideoId = r2Id;
       r2Key = r2K;
@@ -239,6 +242,9 @@ function validateContenidoInput(b) {
     }
   }
 
+  const widthPct = Number(b.width_pct || b.widthPct) || 100;
+  const rowId = b.row_id || b.rowId || null;
+
   return {
     value: {
       tipo: tipo,
@@ -248,7 +254,13 @@ function validateContenidoInput(b) {
       r2VideoId: r2VideoId,
       r2Key: r2Key,
       docFile: b.docFile || null,
-      docNombre: b.docNombre || null
+      docNombre: b.docNombre || null,
+      docMime: b.docMime || null,
+      docSize: b.docSize != null ? Number(b.docSize) : null,
+      docCategory: b.docCategory || null,
+      widthPct: widthPct,
+      rowId: rowId,
+      orden: b.orden != null ? Number(b.orden) : null
     }
   };
 }
@@ -257,6 +269,10 @@ function addContenido(course, data) {
   if (data.tipo === 'documento' && !data.docFile) {
     return { error: 'Sube el archivo del documento primero.', status: 400 };
   }
+  if (data.tipo === 'imagen' && !data.docFile) {
+    return { error: 'Selecciona o sube la imagen primero.', status: 400 };
+  }
+  const hasFile = data.tipo === 'documento' || data.tipo === 'imagen';
   const item = {
     id: crypto.randomUUID(),
     tipo: data.tipo,
@@ -265,9 +281,14 @@ function addContenido(course, data) {
     videoUrl: data.tipo === 'video' ? data.videoUrl : null,
     r2VideoId: data.tipo === 'video' ? data.r2VideoId : null,
     r2Key: data.tipo === 'video' ? data.r2Key : null,
-    docFile: data.tipo === 'documento' ? data.docFile : null,
-    docNombre: data.tipo === 'documento' ? data.docNombre : null,
-    orden: course.contenido.length + 1
+    docFile: hasFile ? data.docFile : null,
+    docNombre: hasFile ? data.docNombre : null,
+    docMime: hasFile ? data.docMime : null,
+    docSize: hasFile ? data.docSize : null,
+    docCategory: hasFile ? data.docCategory : null,
+    widthPct: data.widthPct || 100,
+    rowId: data.rowId || crypto.randomUUID(),
+    orden: data.orden != null ? Number(data.orden) : (course.contenido.length + 1)
   };
   course.contenido.push(item);
   save();
@@ -278,7 +299,7 @@ function updateContenido(course, id, data) {
   const item = course.contenido.find(x => x.id === id);
   if (!item) return { notFound: true };
 
-  if (data.orden != null) {
+  if (data.orden != null && !data.tipo) {
     item.orden = data.orden;
     save();
     return { item: item };
@@ -286,6 +307,9 @@ function updateContenido(course, id, data) {
 
   if (data.tipo === 'documento' && !item.docFile && !data.docFile) {
     return { error: 'Para un documento, sube el archivo primero.', status: 400 };
+  }
+  if (data.tipo === 'imagen' && !item.docFile && !data.docFile) {
+    return { error: 'Selecciona o sube la imagen primero.', status: 400 };
   }
 
   const oldDoc = item.docFile;
@@ -299,8 +323,14 @@ function updateContenido(course, id, data) {
   if (data.docFile) {
     item.docFile = data.docFile;
     item.docNombre = data.docNombre;
+    item.docMime = data.docMime || item.docMime;
+    item.docSize = data.docSize != null ? data.docSize : item.docSize;
+    item.docCategory = data.docCategory || item.docCategory;
   }
-  if (data.tipo !== 'documento' && oldDoc) {
+  if (data.widthPct) item.widthPct = data.widthPct;
+  if (data.rowId) item.rowId = data.rowId;
+
+  if (data.tipo !== 'documento' && data.tipo !== 'imagen' && oldDoc) {
     item.docFile = null;
     item.docNombre = null;
     save();
@@ -308,6 +338,21 @@ function updateContenido(course, id, data) {
   }
   save();
   return { item: item };
+}
+
+function updateContenidoLayout(course, items) {
+  if (!Array.isArray(items)) return { error: 'Se esperaba un arreglo de items', status: 400 };
+  const validWidths = [25, 33, 50, 66, 75, 100];
+  items.forEach(it => {
+    const found = course.contenido.find(c => c.id === it.id);
+    if (found) {
+      if (it.orden !== undefined && Number.isFinite(Number(it.orden))) found.orden = Number(it.orden);
+      if (it.width_pct !== undefined && validWidths.includes(Number(it.width_pct))) found.widthPct = Number(it.width_pct);
+      if (it.row_id !== undefined) found.rowId = it.row_id;
+    }
+  });
+  save();
+  return { ok: true, count: items.length };
 }
 
 function deleteContenido(course, id) {
@@ -331,18 +376,26 @@ function sortedContent(course) {
   return course.contenido
     .slice()
     .sort((a, b) => a.orden - b.orden)
-    .map(x => ({
-      id: x.id,
-      tipo: x.tipo,
-      titulo: x.titulo,
-      texto: x.tipo === 'texto' ? x.texto : null,
-      videoUrl: x.tipo === 'video' ? x.videoUrl : null,
-      r2VideoId: x.tipo === 'video' ? x.r2VideoId : null,
-      r2Key: x.tipo === 'video' ? x.r2Key : null,
-      docFile: x.tipo === 'documento' ? x.docFile : null,
-      docNombre: x.tipo === 'documento' ? x.docNombre : null,
-      orden: x.orden
-    }));
+    .map(x => {
+      const hasFile = x.tipo === 'documento' || x.tipo === 'imagen';
+      return {
+        id: x.id,
+        tipo: x.tipo,
+        titulo: x.titulo,
+        texto: x.tipo === 'texto' ? x.texto : null,
+        videoUrl: x.tipo === 'video' ? x.videoUrl : null,
+        r2VideoId: x.tipo === 'video' ? x.r2VideoId : null,
+        r2Key: x.tipo === 'video' ? x.r2Key : null,
+        docFile: hasFile ? x.docFile : null,
+        docNombre: hasFile ? x.docNombre : null,
+        docMime: hasFile ? x.docMime : null,
+        docSize: hasFile ? x.docSize : null,
+        docCategory: hasFile ? x.docCategory : null,
+        orden: x.orden,
+        rowId: x.rowId || null,
+        widthPct: x.widthPct || 100
+      };
+    });
 }
 
 /* ---------- Vistas públicas / enriquecidas (admin) ---------- */
@@ -699,6 +752,7 @@ module.exports = {
   validateContenidoInput,
   addContenido,
   updateContenido,
+  updateContenidoLayout,
   deleteContenido,
   findContenidoGlobal,
   videoUrlToEmbed,

@@ -1,5 +1,6 @@
 const { requireAuth, requireAdmin } = require('../../lib/auth');
 const r2 = require('../../lib/r2');
+const { validateFile } = require('../../lib/file-validation');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -16,6 +17,12 @@ module.exports = async (req, res) => {
         const body = req.body || {};
         const filename = String(body.filename || 'documento.pdf');
         const contentType = String(body.contentType || 'application/pdf');
+        const size = Number(body.size) || 0;
+
+        const validation = validateFile({ filename, contentType, size });
+        if (!validation.ok) {
+          return res.status(400).json({ error: validation.error });
+        }
 
         const { uploadUrl, key } = await r2.presignUpload({
           type: 'document',

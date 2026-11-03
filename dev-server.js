@@ -146,6 +146,14 @@ app.post('/api/admin/courses/:id/contenido', (req, res) => {
   bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/contenido/index'));
 });
 
+app.put('/api/admin/courses/:id/contenido', (req, res) => {
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/contenido/index'));
+});
+
+app.put('/api/admin/courses/:id/contenido/:contenidoId/layout', (req, res) => {
+  bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/contenido/[contenidoId]/layout'));
+});
+
 app.put('/api/admin/courses/:id/contenido/:contenidoId', (req, res) => {
   bridgeParams(req, res, loadFunction('./api/admin/courses/[id]/contenido/[contenidoId]'));
 });
@@ -180,6 +188,52 @@ app.post('/api/admin/videos/confirm', (req, res) => {
 
 app.delete('/api/admin/videos/:id', (req, res) => {
   bridgeParams(req, res, loadFunction('./api/admin/videos/[id]'));
+});
+
+// Admin - Images
+app.get('/api/admin/images', (req, res) => {
+  const fn = loadFunction('./api/admin/images/index');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.post('/api/admin/images/presign', (req, res) => {
+  const fn = loadFunction('./api/admin/images/presign');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.post('/api/admin/images/confirm', (req, res) => {
+  const fn = loadFunction('./api/admin/images/confirm');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.delete('/api/admin/images/:id', (req, res) => {
+  bridgeParams(req, res, loadFunction('./api/admin/images/[id]'));
+});
+
+// Admin - Files
+app.get('/api/admin/files', (req, res) => {
+  const fn = loadFunction('./api/admin/files/index');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.post('/api/admin/files/presign', (req, res) => {
+  const fn = loadFunction('./api/admin/files/presign');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.post('/api/admin/files/confirm', (req, res) => {
+  const fn = loadFunction('./api/admin/files/confirm');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.delete('/api/admin/files/:id', (req, res) => {
+  bridgeParams(req, res, loadFunction('./api/admin/files/[id]'));
 });
 
 // Client - Me

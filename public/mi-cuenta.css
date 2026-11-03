@@ -649,42 +649,101 @@
 
 .mc-section-title{
     font-family:'Cormorant Garamond',serif;
-    font-size:1.6rem;
+    font-size:1.7rem;
     color:var(--primary);
-    margin-bottom:18px;
+    margin-bottom:22px;
+    padding-bottom:12px;
+    border-bottom:2px solid rgba(200,167,107,.3);
+    display:inline-block;
 }
 
 .mc-content-list{
     display:flex;
     flex-direction:column;
-    gap:16px;
+    gap:20px;
+}
+
+.mc-content-row{
+    margin-bottom:8px;
+}
+
+.mc-content-row-inner{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
 }
 
 .mc-content-item{
     background:#fff;
-    border-radius:18px;
+    border-radius:20px;
     border:1px solid rgba(63,18,32,.07);
     box-shadow:0 10px 28px rgba(63,18,32,.06);
     overflow:hidden;
+    transition:box-shadow .3s ease;
+    flex:1;
+    min-width:0;
+}
+
+.mc-content-item.mc-width-25{
+    flex:0 0 calc(25% - 15px);
+    max-width:calc(25% - 15px);
+}
+
+.mc-content-item.mc-width-33{
+    flex:0 0 calc(33.333% - 14px);
+    max-width:calc(33.333% - 14px);
+}
+
+.mc-content-item.mc-width-50{
+    flex:0 0 calc(50% - 10px);
+    max-width:calc(50% - 10px);
+}
+
+.mc-content-item.mc-width-66{
+    flex:0 0 calc(66.666% - 7px);
+    max-width:calc(66.666% - 7px);
+}
+
+.mc-content-item.mc-width-75{
+    flex:0 0 calc(75% - 5px);
+    max-width:calc(75% - 5px);
+}
+
+.mc-content-item.mc-width-100{
+    flex:0 0 100%;
+    max-width:100%;
+}
+
+.mc-content-item:hover{
+    box-shadow:0 14px 36px rgba(63,18,32,.1);
+}
+
+/* ---------- Contenido ---------- */
+
+.mc-content-list{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
 }
 
 .mc-content-head{
     display:flex;
     align-items:center;
-    gap:12px;
-    padding:16px 20px;
+    gap:14px;
+    padding:18px 24px;
     border-bottom:1px solid rgba(63,18,32,.06);
-    background:linear-gradient(180deg,rgba(250,248,245,.9),#fff);
+    background:linear-gradient(180deg,rgba(250,248,245,.95),#fff);
 }
 
 .mc-content-icon{
-    width:42px;
-    height:42px;
+    width:46px;
+    height:46px;
     display:grid;
     place-items:center;
-    border-radius:12px;
-    font-size:1.05rem;
+    border-radius:14px;
+    font-size:1.15rem;
     flex-shrink:0;
+    box-shadow:0 4px 12px rgba(0,0,0,.06);
 }
 
 .mc-content-icon.texto{
@@ -702,42 +761,67 @@
     color:#1E7D4A;
 }
 
+.mc-content-icon.imagen{
+    background:rgba(142,68,173,.12);
+    color:#8E44AD;
+}
+
 .mc-content-head strong{
     color:var(--primary-dark);
-    font-size:.98rem;
+    font-size:1rem;
+    font-weight:700;
+    line-height:1.3;
 }
 
 .mc-content-head small{
     display:block;
-    color:var(--text-light);
-    font-size:.74rem;
-    font-weight:600;
+    color:var(--gold-deep);
+    font-size:.72rem;
+    font-weight:700;
     text-transform:uppercase;
-    letter-spacing:1.2px;
+    letter-spacing:1.5px;
+    margin-bottom:2px;
 }
 
 .mc-content-body{
-    padding:20px;
+    padding:24px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+}
+
+/* ---------- Texto ---------- */
+
+.mc-texto{
+    width:100%;
+    max-width:720px;
+    margin:0 auto;
 }
 
 .mc-texto p{
     color:var(--text);
-    margin-bottom:14px;
-    line-height:1.75;
+    margin-bottom:16px;
+    line-height:1.8;
     white-space:pre-wrap;
+    font-size:.95rem;
 }
 
 .mc-texto p:last-child{
     margin-bottom:0;
 }
 
+/* ---------- Video ---------- */
+
 .mc-video{
     position:relative;
     width:100%;
+    max-width:800px;
+    margin:0 auto;
     padding-top:56.25%;
-    border-radius:14px;
+    border-radius:16px;
     overflow:hidden;
     background:#000;
+    box-shadow:0 12px 32px rgba(0,0,0,.15);
 }
 
 .mc-video iframe{
@@ -758,42 +842,91 @@
     outline:none;
 }
 
-.mc-doc{
+/* ---------- Imágenes ---------- */
+
+.mc-doc-preview{
+    width:100%;
+    max-width:800px;
+    margin:0 auto;
     display:flex;
+    flex-direction:column;
     align-items:center;
-    gap:14px;
-    flex-wrap:wrap;
 }
 
-.mc-doc-info{
-    flex:1;
-    min-width:0;
+.mc-doc-preview img{
+    max-width:100%;
+    height:auto;
+    border-radius:12px;
+    box-shadow:0 8px 24px rgba(63,18,32,.1);
 }
 
-.mc-doc-info strong{
+.mc-doc-preview iframe{
+    width:100%;
+    height:700px;
+    border:none;
+    border-radius:12px;
+    box-shadow:0 8px 24px rgba(63,18,32,.1);
+    background:#fff;
+}
+
+.mc-doc-note{
+    color:var(--text-light);
+    font-style:italic;
+    text-align:center;
+    padding:20px;
+}
+
+/* ---------- Documentos (descarga) ---------- */
+
+.mc-doc-download{
+    width:100%;
+    max-width:500px;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    padding:20px;
+    background:rgba(250,248,245,.6);
+    border-radius:16px;
+    border:1px solid rgba(200,167,107,.2);
+}
+
+.mc-doc-download .mc-doc-info{
+    text-align:center;
+}
+
+.mc-doc-download .mc-doc-info strong{
     display:block;
     color:var(--primary-dark);
-    font-size:.92rem;
+    font-size:1rem;
+    font-weight:700;
+    margin-bottom:4px;
+    word-break:break-word;
 }
 
-.mc-doc-info small{
+.mc-doc-download .mc-doc-info small{
     color:var(--text-light);
-    font-size:.8rem;
+    font-size:.82rem;
+    text-transform:uppercase;
+    letter-spacing:1px;
+    font-weight:600;
 }
 
 .mc-doc-link{
     display:inline-flex;
     align-items:center;
-    gap:8px;
-    padding:11px 18px;
+    justify-content:center;
+    gap:10px;
+    padding:13px 24px;
     border-radius:999px;
     background:var(--gold-gradient);
     color:var(--primary-deep);
-    font-size:.84rem;
+    font-size:.88rem;
     font-weight:800;
     box-shadow:0 8px 20px rgba(168,129,60,.3);
     transition:all .3s ease;
-    white-space:nowrap;
+    text-decoration:none;
 }
 
 .mc-doc-link:hover{
@@ -804,6 +937,8 @@
 .mc-no-content{
     color:var(--text-light);
     font-style:italic;
+    text-align:center;
+    padding:40px 20px;
 }
 
 /* ---------- Toast ---------- */
@@ -894,6 +1029,15 @@ a:focus-visible{
         font-size:1.7rem;
     }
 
+    .mc-content-item.mc-width-25,
+    .mc-content-item.mc-width-33,
+    .mc-content-item.mc-width-50,
+    .mc-content-item.mc-width-66,
+    .mc-content-item.mc-width-75 {
+        flex: 0 0 100%;
+        max-width: 100%;
+    }
+
 }
 
 @media(max-width:480px){
@@ -912,7 +1056,278 @@ a:focus-visible{
     }
 
     .mc-content-body{
+        padding:18px 16px;
+    }
+
+    .mc-video{
+        border-radius:12px;
+    }
+
+    .mc-doc-preview iframe{
+        height:500px;
+    }
+
+    .mc-doc-download{
         padding:16px;
     }
 
 }
+
+/* =======================================
+   MODAL DE CONFIRMACIÓN DE PAGO
+======================================= */
+.mc-modal-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(30, 8, 16, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 18px;
+    animation: mcFadeIn 0.2s ease-out;
+}
+
+.mc-modal-backdrop[hidden] {
+    display: none !important;
+}
+
+@keyframes mcFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.mc-modal-card {
+    background: #fff;
+    border-radius: 18px;
+    border: 1px solid rgba(200, 167, 107, 0.35);
+    box-shadow: 0 25px 60px -15px rgba(63, 18, 32, 0.35);
+    width: 100%;
+    max-width: 520px;
+    overflow: hidden;
+    animation: mcSlideUp 0.25s ease-out;
+}
+
+@keyframes mcSlideUp {
+    from { transform: translateY(18px) scale(0.98); opacity: 0; }
+    to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.mc-modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(63, 18, 32, 0.08);
+    background: linear-gradient(135deg, #fff 0%, #FAF7F4 100%);
+}
+
+.mc-modal-head h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.mc-modal-close {
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+.mc-modal-close:hover {
+    color: var(--primary);
+    background: rgba(106, 32, 53, 0.08);
+}
+
+.mc-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+}
+
+.mc-pay-course-info {
+    background: rgba(200, 167, 107, 0.1);
+    border: 1px solid rgba(200, 167, 107, 0.3);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 0.92rem;
+    color: var(--text-dark);
+}
+
+.mc-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mc-modal-field label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.mc-modal-field input,
+.mc-modal-field select,
+.mc-modal-field textarea {
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(63, 18, 32, 0.16);
+    font-size: 0.95rem;
+    color: var(--text-dark);
+    background: #FAFAF8;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    font-family: inherit;
+}
+
+.mc-modal-field input:focus,
+.mc-modal-field select:focus,
+.mc-modal-field textarea:focus {
+    border-color: var(--primary);
+    background: #fff;
+    box-shadow: 0 0 0 3px rgba(106, 32, 53, 0.12);
+}
+
+.mc-modal-field small {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+}
+
+.mc-modal-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 8px;
+}
+
+.mc-btn-sec {
+    padding: 10px 18px;
+    border-radius: 10px;
+    border: 1px solid rgba(63, 18, 32, 0.18);
+    background: #fff;
+    color: var(--text-dark);
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s;
+}
+
+.mc-btn-sec:hover {
+    background: #F5EFEB;
+    border-color: rgba(63, 18, 32, 0.3);
+}
+
+/* =======================================
+   BOTÓN PASARELA DE PAGO SQUARE
+======================================= */
+.mc-square-cta-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    width: 100%;
+}
+
+.mc-btn-square {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    padding: 14px 22px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #7A243D 0%, #541729 60%, #3F1220 100%);
+    border: 1px solid rgba(200, 167, 107, .45);
+    color: #fff !important;
+    text-decoration: none;
+    box-shadow: 0 8px 22px rgba(63, 18, 32, .24);
+    transition: all .25s cubic-bezier(.22,1,.36,1);
+    font-family: inherit;
+    cursor: pointer;
+}
+
+.mc-btn-square:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(63, 18, 32, .35);
+    background: linear-gradient(135deg, #8A2B45 0%, #601B30 60%, #471524 100%);
+    border-color: var(--gold);
+    color: #fff !important;
+}
+
+.mc-square-btn-icon {
+    font-size: 1.35rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    color: var(--gold-light);
+}
+
+.mc-square-btn-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    flex: 1;
+}
+
+.mc-square-btn-text strong {
+    font-size: .98rem;
+    font-weight: 800;
+    letter-spacing: .2px;
+    color: #fff;
+}
+
+.mc-square-btn-text small {
+    font-size: .74rem;
+    color: var(--gold-light);
+    opacity: .95;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 2px;
+}
+
+.mc-square-external {
+    font-size: .9rem;
+    color: var(--gold-light);
+    opacity: .9;
+}
+
+.mc-square-cta-sub {
+    display: flex;
+    justify-content: center;
+}
+
+.mc-btn-report-pay {
+    background: rgba(200, 167, 107, .08);
+    border: 1px dashed rgba(200, 167, 107, .5);
+    color: var(--gold-deep);
+    border-radius: 8px;
+    padding: 6px 14px;
+    font-size: .8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.mc-btn-report-pay:hover {
+    background: rgba(200, 167, 107, .18);
+    border-style: solid;
+    border-color: var(--gold);
+}
+

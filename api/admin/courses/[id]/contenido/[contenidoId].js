@@ -11,7 +11,7 @@ function validateContenidoInput(b) {
   }
   const tipo = String(b.tipo || '');
   const titulo = String(b.titulo || '').trim();
-  if (!['texto', 'video', 'documento'].includes(tipo)) return { error: 'Tipo de contenido invalido.' };
+  if (!['texto', 'video', 'documento', 'imagen'].includes(tipo)) return { error: 'Tipo de contenido invalido.' };
   if (!titulo) return { error: 'El titulo es obligatorio.' };
   let texto = null, videoUrl = null, r2VideoId = null, r2Key = null;
   if (tipo === 'texto') {
@@ -32,7 +32,7 @@ function validateContenidoInput(b) {
       videoUrl = embed;
     }
   }
-  return { value: { tipo, titulo, texto, videoUrl, r2VideoId, r2Key, docFile: b.docFile || null, docNombre: b.docNombre || null } };
+  return { value: { tipo, titulo, texto, videoUrl, r2VideoId, r2Key, docFile: b.docFile || null, docNombre: b.docNombre || null, docMime: b.docMime || null, docSize: b.docSize != null ? Number(b.docSize) : null, docCategory: b.docCategory || null } };
 }
 
 module.exports = async (req, res) => {
@@ -58,9 +58,10 @@ module.exports = async (req, res) => {
           return res.json({ contenido: formatItem(updated), curso: detail.public });
         }
         if (v.tipo === 'documento' && !existing.doc_file && !v.docFile) return res.status(400).json({ error: 'Para un documento, sube el archivo primero.' });
+        if (v.tipo === 'imagen' && !existing.doc_file && !v.docFile) return res.status(400).json({ error: 'Selecciona o sube la imagen primero.' });
         const updateData = { tipo: v.tipo, titulo: v.titulo, texto: v.tipo === 'texto' ? v.texto : null, video_url: v.tipo === 'video' ? v.videoUrl : null, r2_video_id: v.tipo === 'video' ? v.r2VideoId : null, r2_key: v.tipo === 'video' ? v.r2Key : null, updated_at: new Date().toISOString() };
-        if (v.docFile) { updateData.doc_file = v.docFile; updateData.doc_nombre = v.docNombre; }
-        if (v.tipo !== 'documento') { updateData.doc_file = null; updateData.doc_nombre = null; }
+        if (v.docFile) { updateData.doc_file = v.docFile; updateData.doc_nombre = v.docNombre; updateData.doc_mime = v.docMime; updateData.doc_size = v.docSize; updateData.doc_category = v.docCategory; }
+        if (v.tipo !== 'documento' && v.tipo !== 'imagen') { updateData.doc_file = null; updateData.doc_nombre = null; }
         const { data: updated, error } = await supabaseAdmin.from('contenido').update(updateData).eq('id', contenidoId).select().single();
         if (error) return res.status(500).json({ error: error.message });
         const detail = await getCourseWithDetails(courseId);
@@ -84,5 +85,5 @@ module.exports = async (req, res) => {
 };
 
 function formatItem(c) {
-  return { id: c.id, tipo: c.tipo, titulo: c.titulo, texto: c.tipo === 'texto' ? c.texto : null, videoUrl: c.tipo === 'video' ? c.video_url : null, r2VideoId: c.tipo === 'video' ? c.r2_video_id : null, r2Key: c.tipo === 'video' ? c.r2_key : null, docFile: c.tipo === 'documento' ? c.doc_file : null, docNombre: c.tipo === 'documento' ? c.doc_nombre : null, orden: c.orden };
+  return { id: c.id, tipo: c.tipo, titulo: c.titulo, texto: c.tipo === 'texto' ? c.texto : null, videoUrl: c.tipo === 'video' ? c.video_url : null, r2VideoId: c.tipo === 'video' ? c.r2_video_id : null, r2Key: c.tipo === 'video' ? c.r2_key : null, docFile: (c.tipo === 'documento' || c.tipo === 'imagen') ? c.doc_file : null, docNombre: (c.tipo === 'documento' || c.tipo === 'imagen') ? c.doc_nombre : null, docMime: (c.tipo === 'documento' || c.tipo === 'imagen') ? c.doc_mime : null, docSize: (c.tipo === 'documento' || c.tipo === 'imagen') ? c.doc_size : null, docCategory: (c.tipo === 'documento' || c.tipo === 'imagen') ? c.doc_category : null, orden: c.orden, rowId: c.row_id, widthPct: c.width_pct || 100 };
 }
