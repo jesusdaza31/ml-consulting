@@ -25,6 +25,8 @@ const handleContenidoCreate = require('./admin/courses/[id]/contenido/index');
 const handleContenidoById = require('./admin/courses/[id]/contenido/[contenidoId]');
 const handleContenidoLayout = require('./admin/courses/[id]/contenido/[contenidoId]/layout');
 const handleContenidoFile = require('./admin/contenido/[id]/file');
+const handleTestimonialsIndex = require('./admin/testimonials/index');
+const handleTestimonialsById = require('./admin/testimonials/[id]');
 
 module.exports = async (req, res) => {
   const url = new URL(req.url, 'http://localhost');
@@ -122,6 +124,14 @@ module.exports = async (req, res) => {
     req.query = req.query || {};
     req.query.id = m[1];
     return handleContenidoFile(req, res);
+  }
+
+  // Testimonials
+  if (path === '/testimonials') return handleTestimonialsIndex(req, res);
+  if ((m = path.match(/^\/testimonials\/([^/]+)$/))) {
+    req.query = req.query || {};
+    req.query.id = m[1];
+    return handleTestimonialsById(req, res);
   }
 
   res.status(404).json({ error: 'Not found' });

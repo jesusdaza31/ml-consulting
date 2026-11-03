@@ -2,9 +2,24 @@ const SUPABASE_URL = 'https://sehrdaqcbickcqyreads.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_LbWDb1aTyzSEV71D1wpnYA_83ZJqIqW';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
 
+async function ensureSessionToken() {
+  let token = localStorage.getItem('sb_access_token');
+  if (!token) {
+    try {
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        token = session.access_token;
+        localStorage.setItem('sb_access_token', session.access_token);
+        localStorage.setItem('sb_refresh_token', session.refresh_token);
+      }
+    } catch (e) { /* ignore */ }
+  }
+  return token;
+}
+
 async function authFetch(url, options) {
   options = options || {};
-  const token = localStorage.getItem('sb_access_token');
+  const token = await ensureSessionToken();
   if (!token) {
     window.location.href = '/login.html';
     return;
@@ -51,7 +66,7 @@ async function authFetch(url, options) {
 }
 
 async function checkAuth() {
-  const token = localStorage.getItem('sb_access_token');
+  const token = await ensureSessionToken();
   if (!token) {
     window.location.href = '/login.html';
     return null;

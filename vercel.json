@@ -14,6 +14,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/testimonials.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "public/**",
       "use": "@vercel/static"
     }
@@ -30,6 +34,10 @@
     {
       "src": "/api/client(/.*)?",
       "dest": "/api/client.js"
+    },
+    {
+      "src": "/api/testimonials(/.*)?",
+      "dest": "/api/testimonials.js"
     },
     {
       "src": "/(.*)",

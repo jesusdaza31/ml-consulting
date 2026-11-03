@@ -7,6 +7,7 @@ module.exports = async (req, res) => {
 
   const body = req.body || {};
   const name = String(body.name || '').trim();
+  const phone = String(body.phone || '').trim();
   const email = String(body.email || '').toLowerCase().trim();
   const password = String(body.password || '');
 
@@ -18,7 +19,7 @@ module.exports = async (req, res) => {
     email,
     password,
     options: {
-      data: { name, role: 'client' }
+      data: { name, phone, role: 'client' }
     }
   });
 
@@ -40,6 +41,7 @@ module.exports = async (req, res) => {
       id: data.user.id,
       email: data.user.email,
       name: profile.data ? profile.data.name : name,
+      phone: profile.data ? profile.data.phone : phone,
       role: profile.data ? profile.data.role : 'client'
     },
     token: data.session ? data.session.access_token : null

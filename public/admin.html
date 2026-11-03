@@ -67,6 +67,10 @@
                 <button type="button" class="admin-nav-item" data-tab="archivos">
                     <i class="fa-solid fa-file-lines"></i> Archivos
                 </button>
+                <button type="button" class="admin-nav-item" data-tab="testimonios">
+                    <i class="fa-solid fa-comments"></i> Testimonios
+                    <span class="admin-nav-badge" id="pendingTestimonialsCount" style="display:none">0</span>
+                </button>
             </nav>
 
             <div class="admin-side-foot">
@@ -246,6 +250,33 @@
             <section class="admin-panel" id="panel-archivos">
 
                 <div id="filesState"></div>
+
+            </section>
+
+            <!-- TESTIMONIOS -->
+            <section class="admin-panel" id="panel-testimonios">
+
+                <div class="stat-grid" id="testimonialsStats" style="margin-bottom:24px;"></div>
+
+                <div class="admin-toolbar" style="flex-wrap:wrap;gap:12px;justify-content:space-between">
+                    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;flex:1">
+                        <input type="search" id="testimonialsSearch" class="admin-input"
+                               placeholder="Buscar por autor, servicio o contenido…" style="max-width:320px;" aria-label="Buscar testimonios">
+                        <select id="testimonialsStatusFilter" class="admin-input" style="width:auto;min-width:180px;">
+                            <option value="all">Todos los estados</option>
+                            <option value="pending">Pendientes de moderación</option>
+                            <option value="approved">En pantalla principal (Aprobados)</option>
+                            <option value="rejected">Ocultos / Rechazados</option>
+                        </select>
+                    </div>
+                    <button type="button" class="admin-btn admin-btn-primary" id="addTestimonialBtn">
+                        <i class="fa-solid fa-plus"></i> Agregar testimonio
+                    </button>
+                </div>
+
+                <div class="admin-testimonials-container" id="testimonialsContainer">
+                    <p class="admin-loading">Cargando testimonios…</p>
+                </div>
 
             </section>
 

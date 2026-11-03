@@ -360,99 +360,305 @@ function countUp(el) {
 
 
 /* ==========================================
-   TESTIMONIOS SLIDER
+   TESTIMONIOS SLIDER & MODAL
 ========================================== */
 
+function getInitials(name) {
+    if (!name) return "ML";
+    const parts = name.trim().split(/\s+/);
+    if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function renderStarsHtml(count) {
+    const num = Math.max(1, Math.min(5, parseInt(count, 10) || 5));
+    let html = "";
+    for (let i = 0; i < num; i++) {
+        html += '<i class="fa-solid fa-star"></i>\n';
+    }
+    return html;
+}
+
+function escapeHtml(str) {
+    return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+}
+
 function initTestimonials() {
-
     const slider = document.getElementById("slider");
-
     if (!slider) return;
 
     const track = slider.querySelector(".slides-track");
-
-    const slides = Array.from(slider.querySelectorAll(".slide"));
-
     const dotsWrap = slider.querySelector(".slider-dots");
-
     const prev = slider.querySelector(".prev");
-
     const next = slider.querySelector(".next");
 
-    const total = slides.length;
-
     let current = 0;
-
     let timer = null;
 
-    dotsWrap.innerHTML = "";
+    function setupSlider() {
+        const slides = Array.from(slider.querySelectorAll(".slide"));
+        const total = slides.length;
+        if (!total) return;
 
-    slides.forEach((_, i) => {
+        dotsWrap.innerHTML = "";
 
-        const dot = document.createElement("button");
+        slides.forEach((_, i) => {
+            const dot = document.createElement("button");
+            dot.className = "dot" + (i === current ? " active" : "");
+            dot.setAttribute("aria-label", "Ir al testimonio " + (i + 1));
+            dot.addEventListener("click", () => {
+                goTo(i);
+                restart();
+            });
+            dotsWrap.appendChild(dot);
+        });
 
-        dot.className = "dot" + (i === 0 ? " active" : "");
+        const dots = Array.from(dotsWrap.children);
 
-        dot.setAttribute("aria-label", "Ir al testimonio " + (i + 1));
+        function goTo(i) {
+            current = (i + total) % total;
+            track.style.transform = "translateX(-" + (current * 100) + "%)";
+            slides.forEach((_, idx) => {
+                if (dots[idx]) {
+                    dots[idx].classList.toggle("active", idx === current);
+                }
+            });
+        }
 
-        dot.addEventListener("click", () => {
+        function restart() {
+            clearInterval(timer);
+            timer = setInterval(() => goTo(current + 1), 6000);
+        }
 
-            goTo(i);
+        // Limpiar handlers previos clonando nodos de control
+        const newPrev = prev.cloneNode(true);
+        const newNext = next.cloneNode(true);
+        prev.parentNode.replaceChild(newPrev, prev);
+        next.parentNode.replaceChild(newNext, next);
 
+        newPrev.addEventListener("click", () => {
+            goTo(current - 1);
             restart();
-
         });
 
-        dotsWrap.appendChild(dot);
-
-    });
-
-    const dots = Array.from(dotsWrap.children);
-
-    const goTo = (i) => {
-
-        current = (i + total) % total;
-
-        track.style.transform = "translateX(-" + (current * 100) + "%)";
-
-        slides.forEach((_, idx) => {
-
-            dots[idx].classList.toggle("active", idx === current);
-
+        newNext.addEventListener("click", () => {
+            goTo(current + 1);
+            restart();
         });
 
-    };
+        slider.onmouseenter = () => clearInterval(timer);
+        slider.onmouseleave = restart;
 
-    const restart = () => {
-
-        clearInterval(timer);
-
-        timer = setInterval(() => goTo(current + 1), 5500);
-
-    };
-
-    prev.addEventListener("click", () => {
-
-        goTo(current - 1);
-
+        goTo(current);
         restart();
+    }
 
+    setupSlider();
+
+    // Consultar testimonios aprobados del backend para sincronizar
+    fetch("/api/testimonials")
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+            if (data && data.ok && Array.isArray(data.testimonials) && data.testimonials.length > 0) {
+                // Reconstruir el track con los testimonios aprobados actualizados
+                track.innerHTML = "";
+                data.testimonials.forEach(t => {
+                    const slide = document.createElement("div");
+                    slide.className = "slide";
+                    slide.innerHTML = `
+                        <div class="slide-stars">
+                            ${renderStarsHtml(t.rating)}
+                        </div>
+                        <p>${escapeHtml(t.content)}</p>
+                        <div class="slide-author">
+                            <span class="author-initial">${escapeHtml(getInitials(t.name))}</span>
+                            <div>
+                                <strong>${escapeHtml(t.name)}</strong>
+                                <small>${escapeHtml(t.service)}</small>
+                            </div>
+                        </div>
+                    `;
+                    track.appendChild(slide);
+                });
+                current = 0;
+                setupSlider();
+            }
+        })
+        .catch(() => {
+            // Si falla la red, los testimonios iniciales en el HTML permanecen activos
+        });
+
+    initTestimonialModalAndForm();
+}
+
+function initTestimonialModalAndForm() {
+    const modal = document.getElementById("testimonialModal");
+    const openBtn = document.getElementById("openTestimonialModalBtn");
+    const closeBtn = document.getElementById("closeTestimonialModalBtn");
+    const cancelBtn = document.getElementById("cancelTestimonialBtn");
+    const overlay = document.getElementById("testimonialModalOverlay");
+    const closeSuccessBtn = document.getElementById("closeSuccessBtn");
+    const form = document.getElementById("testimonialForm");
+    const successState = document.getElementById("testimonialSuccessState");
+    const contentTextarea = document.getElementById("testimonialContent");
+    const charCount = document.getElementById("charCount");
+    const alertBox = document.getElementById("testimonialAlert");
+
+    if (!modal) return;
+
+    function openModal() {
+        modal.classList.add("active");
+        modal.setAttribute("aria-hidden", "false");
+        document.body.style.overflow = "hidden";
+        if (form) form.hidden = false;
+        if (successState) successState.hidden = true;
+        if (alertBox) alertBox.hidden = true;
+    }
+
+    function closeModal() {
+        modal.classList.remove("active");
+        modal.setAttribute("aria-hidden", "true");
+        document.body.style.overflow = "";
+    }
+
+    if (openBtn) openBtn.addEventListener("click", openModal);
+    if (closeBtn) closeBtn.addEventListener("click", closeModal);
+    if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+    if (overlay) overlay.addEventListener("click", closeModal);
+    if (closeSuccessBtn) closeSuccessBtn.addEventListener("click", closeModal);
+
+    document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && modal.classList.contains("active")) {
+            closeModal();
+        }
     });
 
-    next.addEventListener("click", () => {
+    // Rating Picker interactivo
+    const ratingPicker = document.getElementById("ratingPicker");
+    const ratingValue = document.getElementById("ratingValue");
+    const ratingLabel = document.getElementById("ratingLabel");
 
-        goTo(current + 1);
+    const ratingDescriptions = {
+        1: "Regular (1 de 5)",
+        2: "Aceptable (2 de 5)",
+        3: "Bueno (3 de 5)",
+        4: "Muy bueno (4 de 5)",
+        5: "Excelente (5 de 5)"
+    };
 
-        restart();
+    if (ratingPicker && ratingValue) {
+        const starBtns = Array.from(ratingPicker.querySelectorAll(".star-btn"));
 
-    });
+        function updateStarsVisual(rating) {
+            starBtns.forEach(btn => {
+                const r = parseInt(btn.dataset.rating, 10);
+                btn.classList.toggle("active", r <= rating);
+            });
+            if (ratingLabel && ratingDescriptions[rating]) {
+                ratingLabel.textContent = ratingDescriptions[rating];
+            }
+        }
 
-    slider.addEventListener("mouseenter", () => clearInterval(timer));
+        starBtns.forEach(btn => {
+            btn.addEventListener("click", () => {
+                const r = parseInt(btn.dataset.rating, 10);
+                ratingValue.value = r;
+                updateStarsVisual(r);
+            });
 
-    slider.addEventListener("mouseleave", restart);
+            btn.addEventListener("mouseenter", () => {
+                const r = parseInt(btn.dataset.rating, 10);
+                updateStarsVisual(r);
+            });
+        });
 
-    restart();
+        ratingPicker.addEventListener("mouseleave", () => {
+            const currentR = parseInt(ratingValue.value, 10) || 5;
+            updateStarsVisual(currentR);
+        });
+    }
 
+    // Contador de caracteres
+    if (contentTextarea && charCount) {
+        contentTextarea.addEventListener("input", () => {
+            charCount.textContent = contentTextarea.value.length + " / 600";
+        });
+    }
+
+    // Envío del formulario
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const name = document.getElementById("testimonialName")?.value.trim();
+            const service = document.getElementById("testimonialService")?.value;
+            const content = contentTextarea?.value.trim();
+            const rating = parseInt(ratingValue?.value, 10) || 5;
+
+            if (!name || !service || !content) {
+                showAlert("Por favor completa todos los campos requeridos.", "error");
+                return;
+            }
+
+            if (content.length < 10) {
+                showAlert("El comentario debe tener al menos 10 caracteres.", "error");
+                return;
+            }
+
+            const submitBtn = document.getElementById("submitTestimonialBtn");
+            const btnText = submitBtn?.querySelector(".btn-text");
+            const btnSpinner = submitBtn?.querySelector(".btn-spinner");
+
+            if (submitBtn) submitBtn.disabled = true;
+            if (btnText) btnText.hidden = true;
+            if (btnSpinner) btnSpinner.hidden = false;
+            if (alertBox) alertBox.hidden = true;
+
+            try {
+                const response = await fetch("/api/testimonials", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ name, service, content, rating })
+                });
+
+                const result = await response.json();
+
+                if (!response.ok || !result.ok) {
+                    throw new Error(result.error || "No pudimos enviar tu testimonio. Por favor intenta de nuevo.");
+                }
+
+                form.reset();
+                if (charCount) charCount.textContent = "0 / 600";
+                if (ratingValue) ratingValue.value = "5";
+                if (ratingPicker) {
+                    const starBtns = Array.from(ratingPicker.querySelectorAll(".star-btn"));
+                    starBtns.forEach(btn => btn.classList.add("active"));
+                    if (ratingLabel) ratingLabel.textContent = ratingDescriptions[5];
+                }
+
+                form.hidden = true;
+                if (successState) successState.hidden = false;
+            } catch (err) {
+                showAlert(err.message, "error");
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+                if (btnText) btnText.hidden = false;
+                if (btnSpinner) btnSpinner.hidden = true;
+            }
+        });
+    }
+
+    function showAlert(msg, type) {
+        if (!alertBox) return;
+        alertBox.textContent = msg;
+        alertBox.className = "testimonial-alert " + (type || "error");
+        alertBox.hidden = false;
+    }
 }
 
 

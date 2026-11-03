@@ -13,21 +13,35 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE TABLE IF NOT EXISTS profiles (
   id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
   name TEXT NOT NULL,
+  phone TEXT DEFAULT '',
   role TEXT NOT NULL DEFAULT 'client' CHECK (role IN ('admin', 'client')),
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Función para crear perfil automáticamente al registrarse
+-- Si la tabla ya existía, asegurar la columna phone
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT '';
+
+-- Función para crear o actualizar perfil automáticamente al registrarse (soporta Email, Teléfono y Google OAuth)
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
-  INSERT INTO public.profiles (id, name, role)
+  INSERT INTO public.profiles (id, name, phone, role)
   VALUES (
     NEW.id,
-    COALESCE(NEW.raw_user_meta_data->>'name', 'Usuario'),
+    COALESCE(
+      NEW.raw_user_meta_data->>'name',
+      NEW.raw_user_meta_data->>'full_name',
+      split_part(NEW.email, '@', 1),
+      'Usuario'
+    ),
+    COALESCE(NEW.raw_user_meta_data->>'phone', NEW.phone, ''),
     COALESCE(NEW.raw_user_meta_data->>'role', 'client')
-  );
+  )
+  ON CONFLICT (id) DO UPDATE
+  SET name = COALESCE(EXCLUDED.name, profiles.name),
+      phone = COALESCE(NULLIF(EXCLUDED.phone, ''), profiles.phone),
+      updated_at = NOW();
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
@@ -440,3 +454,43 @@ DROP POLICY IF EXISTS "Clients can view their own payments" ON payments;
 CREATE POLICY "Clients can view their own payments"
   ON payments FOR SELECT
   USING (client_id = auth.uid());
+
+-- =============================================
+-- TABLA: testimonials (testimonios de clientes)
+-- =============================================
+CREATE TABLE IF NOT EXISTS testimonials (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name TEXT NOT NULL,
+  service TEXT NOT NULL,
+  content TEXT NOT NULL,
+  rating INTEGER NOT NULL DEFAULT 5 CHECK (rating >= 1 AND rating <= 5),
+  status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  featured BOOLEAN NOT NULL DEFAULT true,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_testimonials_status ON testimonials(status);
+CREATE INDEX IF NOT EXISTS idx_testimonials_created_at ON testimonials(created_at DESC);
+
+ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public can view approved testimonials" ON testimonials;
+CREATE POLICY "Public can view approved testimonials"
+  ON testimonials FOR SELECT
+  USING (status = 'approved');
+
+DROP POLICY IF EXISTS "Public can submit pending testimonials" ON testimonials;
+CREATE POLICY "Public can submit pending testimonials"
+  ON testimonials FOR INSERT
+  WITH CHECK (status = 'pending');
+
+DROP POLICY IF EXISTS "Admins can manage all testimonials" ON testimonials;
+CREATE POLICY "Admins can manage all testimonials"
+  ON testimonials FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM profiles
+      WHERE id = auth.uid() AND role = 'admin'
+    )
+  );

@@ -3546,3 +3546,174 @@ textarea:focus-visible{
     border-color: var(--gold);
 }
 
+/* ==========================================
+   TESTIMONIOS ADMIN
+========================================== */
+
+.admin-testimonials-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 20px;
+    margin-top: 10px;
+}
+
+.admin-testimonial-card {
+    background: var(--white);
+    border-radius: 18px;
+    border: 1px solid rgba(63, 18, 32, .08);
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+    box-shadow: 0 4px 18px rgba(63, 18, 32, .04);
+}
+
+.admin-testimonial-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 28px rgba(63, 18, 32, .08);
+    border-color: rgba(200, 167, 107, .4);
+}
+
+.admin-testimonial-card.pending {
+    border-left: 4px solid #f59e0b;
+    background: linear-gradient(to right, rgba(245, 158, 11, .03), var(--white) 15%);
+}
+
+.admin-testimonial-card.approved {
+    border-left: 4px solid #10b981;
+}
+
+.admin-testimonial-card.rejected {
+    border-left: 4px solid #94a3b8;
+    opacity: .78;
+}
+
+.admin-testimonial-card.rejected:hover {
+    opacity: 1;
+}
+
+.admin-t-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.admin-t-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.admin-t-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: var(--wine-gradient);
+    color: var(--gold-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: .95rem;
+    letter-spacing: .5px;
+    box-shadow: 0 4px 12px rgba(106, 32, 53, .2);
+    flex-shrink: 0;
+}
+
+.admin-t-user strong {
+    display: block;
+    color: var(--primary-dark);
+    font-size: 1rem;
+    font-weight: 700;
+    line-height: 1.25;
+}
+
+.admin-t-service {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: .8rem;
+    color: var(--text-light);
+    margin-top: 3px;
+}
+
+.admin-t-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: .75rem;
+    font-weight: 700;
+    letter-spacing: .3px;
+}
+
+.admin-t-badge.approved {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.admin-t-badge.pending {
+    background: #fffbeb;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.admin-t-badge.rejected {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #cbd5e1;
+}
+
+.admin-t-quote {
+    font-family: 'Cormorant Garamond', Georgia, serif;
+    font-size: 1.15rem;
+    line-height: 1.55;
+    color: var(--text);
+    font-style: italic;
+    margin: 6px 0 16px;
+    flex: 1;
+}
+
+.admin-t-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(63, 18, 32, .06);
+    flex-wrap: wrap;
+}
+
+.admin-t-date {
+    font-size: .78rem;
+    color: var(--text-light);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.admin-t-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.admin-btn-sm {
+    padding: 6px 12px;
+    font-size: .8rem;
+    border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+    .admin-testimonials-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+

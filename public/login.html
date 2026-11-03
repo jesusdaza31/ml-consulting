@@ -32,73 +32,146 @@
         Volver al sitio
     </a>
 
-    <main class="auth-card">
+    <main class="auth-card" id="authCard">
 
         <div class="auth-brand">
             <span class="auth-brand-logo">
                 <img src="assets/logo.png" alt="ML Consulting Services LLC logo">
             </span>
             <h1>ML Consulting <em>Services</em></h1>
-            <p class="auth-subtitle">Accede a tu cuenta</p>
+            <p class="auth-subtitle" id="authSubtitle">Accede a tu cuenta</p>
         </div>
 
-        <div class="auth-tabs" role="tablist">
-            <button type="button" class="auth-tab active" data-tab="login" role="tab">Iniciar sesión</button>
-            <button type="button" class="auth-tab" data-tab="register" role="tab">Registrarse</button>
+        <!-- ESTADO DE CARGA OAUTH -->
+        <div class="auth-loading" id="authLoading" hidden>
+            <div class="auth-spinner"></div>
+            <p id="authLoadingText">Verificando sesión...</p>
         </div>
 
-        <!-- INICIAR SESIÓN -->
-        <form class="auth-form active" id="loginForm" novalidate>
-            <label class="auth-field">
-                <span>Correo electrónico</span>
-                <input type="email" name="email" placeholder="tu@correo.com"
-                       autocomplete="email" required>
-            </label>
-
-            <label class="auth-field">
-                <span>Contraseña</span>
-                <input type="password" name="password" placeholder="••••••••"
-                       autocomplete="current-password" required>
-            </label>
-
-            <p class="auth-error" id="loginError" hidden></p>
-
-            <button type="submit" class="auth-btn">
-                Iniciar sesión <i class="fa-solid fa-arrow-right"></i>
+        <div id="authFormsContainer">
+            <!-- BOTÓN GOOGLE -->
+            <button type="button" class="auth-btn-google" id="googleAuthBtn" aria-label="Continuar con Google">
+                <svg class="google-icon" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span id="googleBtnLabel">Continuar con Google</span>
             </button>
-        </form>
 
-        <!-- REGISTRARSE -->
-        <form class="auth-form" id="registerForm" novalidate>
-            <label class="auth-field">
-                <span>Nombre completo</span>
-                <input type="text" name="name" placeholder="Tu nombre"
-                       autocomplete="name" required>
-            </label>
+            <div class="auth-divider">
+                <span>o continúa con tu correo</span>
+            </div>
 
-            <label class="auth-field">
-                <span>Correo electrónico</span>
-                <input type="email" name="email" placeholder="tu@correo.com"
-                       autocomplete="email" required>
-            </label>
+            <div class="auth-tabs" role="tablist">
+                <button type="button" class="auth-tab active" data-tab="login" role="tab">Iniciar sesión</button>
+                <button type="button" class="auth-tab" data-tab="register" role="tab">Registrarse</button>
+            </div>
 
-            <label class="auth-field">
-                <span>Contraseña <small>(mínimo 6 caracteres)</small></span>
-                <input type="password" name="password" placeholder="••••••••"
-                       autocomplete="new-password" required>
-            </label>
+            <!-- INICIAR SESIÓN -->
+            <form class="auth-form active" id="loginForm" novalidate>
+                <label class="auth-field">
+                    <span>Correo electrónico</span>
+                    <input type="email" name="email" placeholder="tu@correo.com"
+                           autocomplete="email" required>
+                </label>
 
-            <p class="auth-error" id="registerError" hidden></p>
+                <label class="auth-field">
+                    <span>Contraseña</span>
+                    <input type="password" name="password" placeholder="••••••••"
+                           autocomplete="current-password" required>
+                </label>
 
-            <button type="submit" class="auth-btn">
-                Crear cuenta <i class="fa-solid fa-arrow-right"></i>
-            </button>
-        </form>
+                <p class="auth-error" id="loginError" hidden></p>
 
-        <p class="auth-note">
-            Al crear tu cuenta podrás acceder desde cualquier dispositivo.
-            <a href="/">¿Prefieres navegar sin cuenta?</a>
-        </p>
+                <button type="submit" class="auth-btn">
+                    Iniciar sesión <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <!-- REGISTRARSE -->
+            <form class="auth-form" id="registerForm" novalidate>
+                <label class="auth-field">
+                    <span>Nombre completo</span>
+                    <input type="text" name="name" placeholder="Tu nombre y apellido"
+                           autocomplete="name" required>
+                </label>
+
+                <label class="auth-field">
+                    <span>Teléfono / WhatsApp</span>
+                    <input type="tel" name="phone" placeholder="+1 (404) 555-0199"
+                           autocomplete="tel" required>
+                </label>
+
+                <label class="auth-field">
+                    <span>Correo electrónico</span>
+                    <input type="email" name="email" placeholder="tu@correo.com"
+                           autocomplete="email" required>
+                </label>
+
+                <label class="auth-field">
+                    <span>Contraseña <small>(mínimo 6 caracteres)</small></span>
+                    <input type="password" name="password" placeholder="••••••••"
+                           autocomplete="new-password" required>
+                </label>
+
+                <p class="auth-error" id="registerError" hidden></p>
+
+                <button type="submit" class="auth-btn" id="registerSubmitBtn">
+                    Crear cuenta <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </form>
+
+            <p class="auth-note">
+                Al registrarte aceptas nuestros términos de servicio y políticas de privacidad.
+                <a href="/">¿Prefieres navegar sin cuenta?</a>
+            </p>
+        </div>
+
+        <!-- FORMULARIO DE VERIFICACIÓN OTP (CORREO) -->
+        <div class="auth-verify-view" id="verifyView" hidden>
+            <div class="otp-header">
+                <div class="otp-icon-wrap">
+                    <i class="fa-solid fa-envelope-circle-check"></i>
+                </div>
+                <h2>Verifica tu correo</h2>
+                <p class="otp-instruction">
+                    Ingresa el código de 6 dígitos que enviamos a:
+                    <strong id="verifyEmailDisplay">tu@correo.com</strong>
+                </p>
+            </div>
+
+            <form id="verifyForm" novalidate>
+                <div class="otp-inputs" id="otpInputs">
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="0" autocomplete="one-time-code" required>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="1" required>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="2" required>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="3" required>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="4" required>
+                    <input type="text" inputmode="numeric" pattern="[0-9]*" maxlength="1" class="otp-digit" data-index="5" required>
+                </div>
+
+                <p class="auth-error" id="verifyError" hidden></p>
+                <p class="auth-success" id="verifySuccess" hidden></p>
+
+                <button type="submit" class="auth-btn" id="verifySubmitBtn">
+                    Verificar y acceder <i class="fa-solid fa-check"></i>
+                </button>
+            </form>
+
+            <div class="otp-footer">
+                <p class="otp-resend-text">
+                    ¿No recibiste el código?
+                    <button type="button" class="btn-link" id="resendOtpBtn" disabled>
+                        Reenviar en <span id="resendCountdown">60</span>s
+                    </button>
+                </p>
+                <button type="button" class="btn-link otp-back-link" id="backToRegisterBtn">
+                    <i class="fa-solid fa-arrow-left"></i> Cambiar correo o volver
+                </button>
+            </div>
+        </div>
 
     </main>
 

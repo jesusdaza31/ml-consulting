@@ -35,6 +35,7 @@ const {
 const courses = require('./courses');
 const videos = require('./videos');
 const payments = require('./payments');
+const testimonialsStorage = require('./testimonials-storage');
 
 // Supabase (opcional, para autenticación con token Bearer)
 let supabase = null;
@@ -493,6 +494,105 @@ app.delete('/api/admin/payments/:id', requireAdmin, (req, res) => {
   const ok = payments.deletePayment(req.params.id);
   if (!ok) return res.status(404).json({ error: 'Pago no encontrado' });
   res.json({ ok: true });
+});
+
+/* ---------- Testimonios (Público + Admin) ---------- */
+app.get('/api/testimonials', async (req, res) => {
+  try {
+    const list = await testimonialsStorage.getApprovedTestimonials();
+    res.json({ ok: true, testimonials: list });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/testimonials', async (req, res) => {
+  try {
+    const { name, service, content, rating } = req.body || {};
+    if (!name || typeof name !== 'string' || name.trim().length < 2) {
+      return res.status(400).json({ ok: false, error: 'Por favor ingresa tu nombre (mínimo 2 caracteres).' });
+    }
+    if (!service || typeof service !== 'string' || service.trim().length < 2) {
+      return res.status(400).json({ ok: false, error: 'Por favor indica el servicio recibido.' });
+    }
+    if (!content || typeof content !== 'string' || content.trim().length < 10) {
+      return res.status(400).json({ ok: false, error: 'El comentario debe contener al menos 10 caracteres.' });
+    }
+    const item = await testimonialsStorage.createTestimonial({
+      name: name.trim().slice(0, 80),
+      service: service.trim().slice(0, 80),
+      content: content.trim().slice(0, 600),
+      rating: parseInt(rating, 10) || 5,
+      status: 'pending',
+      featured: false
+    });
+    res.status(201).json({
+      ok: true,
+      message: '¡Gracias por compartir tu testimonio! Será publicado una vez sea aprobado por nuestro equipo.',
+      testimonial: item
+    });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.get('/api/admin/testimonials', requireAdmin, async (req, res) => {
+  try {
+    const testimonials = await testimonialsStorage.getAllTestimonials();
+    const counts = {
+      total: testimonials.length,
+      pending: testimonials.filter(t => t.status === 'pending').length,
+      approved: testimonials.filter(t => t.status === 'approved').length,
+      rejected: testimonials.filter(t => t.status === 'rejected').length
+    };
+    res.json({ ok: true, testimonials, counts });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.post('/api/admin/testimonials', requireAdmin, async (req, res) => {
+  try {
+    const { name, service, content, rating, status = 'approved', featured = true } = req.body || {};
+    const item = await testimonialsStorage.createTestimonial({
+      name,
+      service,
+      content,
+      rating: parseInt(rating, 10) || 5,
+      status,
+      featured
+    });
+    res.status(201).json({ ok: true, testimonial: item });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.patch('/api/admin/testimonials/:id', requireAdmin, async (req, res) => {
+  try {
+    const updated = await testimonialsStorage.updateTestimonial(req.params.id, req.body || {});
+    res.json({ ok: true, testimonial: updated });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.put('/api/admin/testimonials/:id', requireAdmin, async (req, res) => {
+  try {
+    const updated = await testimonialsStorage.updateTestimonial(req.params.id, req.body || {});
+    res.json({ ok: true, testimonial: updated });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
+});
+
+app.delete('/api/admin/testimonials/:id', requireAdmin, async (req, res) => {
+  try {
+    await testimonialsStorage.deleteTestimonial(req.params.id);
+    res.json({ ok: true, message: 'Testimonio eliminado correctamente.' });
+  } catch (e) {
+    res.status(500).json({ ok: false, error: e.message });
+  }
 });
 
 app.post('/api/payments/confirm', requireAuthFlexible, (req, res) => {

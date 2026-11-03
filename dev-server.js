@@ -275,6 +275,44 @@ app.get('/api/client/file/:id', (req, res) => {
   bridgeParams(req, res, loadFunction('./api/client/file/[id]'));
 });
 
+// Testimonials - Public
+app.get('/api/testimonials', (req, res) => {
+  const fn = loadFunction('./api/testimonials');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.post('/api/testimonials', (req, res) => {
+  const fn = loadFunction('./api/testimonials');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+// Testimonials - Admin
+app.get('/api/admin/testimonials', (req, res) => {
+  const fn = loadFunction('./api/admin/testimonials/index');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.post('/api/admin/testimonials', (req, res) => {
+  const fn = loadFunction('./api/admin/testimonials/index');
+  if (fn) fn(req, res);
+  else res.status(500).json({ error: 'Function not found' });
+});
+
+app.patch('/api/admin/testimonials/:id', (req, res) => {
+  bridgeParams(req, res, loadFunction('./api/admin/testimonials/[id]'));
+});
+
+app.put('/api/admin/testimonials/:id', (req, res) => {
+  bridgeParams(req, res, loadFunction('./api/admin/testimonials/[id]'));
+});
+
+app.delete('/api/admin/testimonials/:id', (req, res) => {
+  bridgeParams(req, res, loadFunction('./api/admin/testimonials/[id]'));
+});
+
 // Archivos estáticos (frontend)
 app.use(express.static(path.join(__dirname, 'public')));
 

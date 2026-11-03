@@ -358,6 +358,235 @@ input{
     text-decoration:underline;
 }
 
+/* ---------- Botón Google ---------- */
+
+.auth-btn-google{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:12px;
+    padding:13px 20px;
+    background:#ffffff;
+    border:1.5px solid rgba(63,18,32,.14);
+    border-radius:999px;
+    color:var(--text);
+    font-size:.92rem;
+    font-weight:700;
+    cursor:pointer;
+    box-shadow:0 4px 14px rgba(63,18,32,.04);
+    transition:all .3s ease;
+    margin-bottom:4px;
+}
+
+.auth-btn-google:hover{
+    border-color:var(--gold);
+    box-shadow:0 8px 22px rgba(200,167,107,.22);
+    transform:translateY(-2px);
+    background:#fffdf9;
+}
+
+.auth-btn-google svg{
+    flex-shrink:0;
+}
+
+/* ---------- Separador ---------- */
+
+.auth-divider{
+    display:flex;
+    align-items:center;
+    text-align:center;
+    margin:18px 0;
+    color:var(--text-light);
+    font-size:.78rem;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+}
+
+.auth-divider::before,
+.auth-divider::after{
+    content:"";
+    flex:1;
+    border-bottom:1px solid rgba(63,18,32,.1);
+}
+
+.auth-divider span{
+    padding:0 12px;
+}
+
+/* ---------- Estado de Carga ---------- */
+
+.auth-loading{
+    text-align:center;
+    padding:36px 16px;
+    animation:formIn .35s ease both;
+}
+
+.auth-spinner{
+    width:46px;
+    height:46px;
+    border:4px solid rgba(106,32,53,.15);
+    border-top-color:var(--primary);
+    border-radius:50%;
+    animation:authSpin .8s linear infinite;
+    margin:0 auto 16px;
+}
+
+@keyframes authSpin{
+    to{transform:rotate(360deg);}
+}
+
+#authLoadingText{
+    font-size:.95rem;
+    font-weight:600;
+    color:var(--primary-dark);
+}
+
+/* ---------- Vista de Verificación OTP ---------- */
+
+.auth-verify-view{
+    animation:formIn .35s ease both;
+}
+
+.otp-header{
+    text-align:center;
+    margin-bottom:24px;
+}
+
+.otp-icon-wrap{
+    width:64px;
+    height:64px;
+    border-radius:50%;
+    background:rgba(200,167,107,.16);
+    color:var(--primary);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:1.85rem;
+    margin:0 auto 14px;
+    box-shadow:0 6px 18px rgba(200,167,107,.2);
+}
+
+.otp-header h2{
+    font-family:'Cormorant Garamond',serif;
+    font-size:1.85rem;
+    font-weight:700;
+    color:var(--primary-dark);
+    line-height:1.2;
+    margin-bottom:8px;
+}
+
+.otp-instruction{
+    font-size:.86rem;
+    color:var(--text-light);
+    line-height:1.55;
+}
+
+.otp-instruction strong{
+    color:var(--primary-dark);
+    display:inline-block;
+    word-break:break-all;
+}
+
+.otp-inputs{
+    display:flex;
+    gap:8px;
+    justify-content:center;
+    margin-bottom:22px;
+}
+
+.otp-digit{
+    width:46px;
+    height:56px;
+    text-align:center;
+    font-size:1.55rem;
+    font-weight:800;
+    color:var(--primary-dark);
+    border:2px solid rgba(63,18,32,.16);
+    border-radius:12px;
+    background:#ffffff;
+    outline:none;
+    transition:all .25s ease;
+}
+
+.otp-digit:focus{
+    border-color:var(--gold);
+    box-shadow:0 0 0 4px rgba(200,167,107,.22);
+    background:#fff;
+    transform:scale(1.04);
+}
+
+/* ---------- Mensaje de Éxito ---------- */
+
+.auth-success{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:18px;
+    padding:11px 14px;
+    border-radius:10px;
+    background:rgba(46,125,50,.08);
+    border:1px solid rgba(46,125,50,.25);
+    color:#2E7D32;
+    font-size:.85rem;
+    font-weight:600;
+}
+
+.auth-success:empty{
+    display:none;
+}
+
+/* ---------- Botones Link y Footer OTP ---------- */
+
+.otp-footer{
+    margin-top:24px;
+    text-align:center;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    font-size:.82rem;
+    color:var(--text-light);
+}
+
+.btn-link{
+    background:none;
+    border:none;
+    color:var(--gold-deep);
+    font-weight:700;
+    font-size:inherit;
+    cursor:pointer;
+    text-decoration:underline;
+    padding:2px 4px;
+    font-family:inherit;
+    transition:color .25s ease;
+}
+
+.btn-link:hover:not(:disabled){
+    color:var(--primary);
+}
+
+.btn-link:disabled{
+    color:var(--text-light);
+    cursor:not-allowed;
+    text-decoration:none;
+    opacity:.65;
+}
+
+.otp-back-link{
+    color:var(--text-light);
+    text-decoration:none;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+}
+
+.otp-back-link:hover{
+    color:var(--primary);
+    text-decoration:underline;
+}
+
 /* ========= RESPONSIVE ========= */
 
 @media(max-width:480px){
@@ -390,6 +619,21 @@ input{
     .auth-tab{
         padding:10px 4px;
         font-size:.82rem;
+    }
+
+    .otp-inputs{
+        gap:6px;
+    }
+
+    .otp-digit{
+        width:40px;
+        height:50px;
+        font-size:1.3rem;
+        border-radius:10px;
+    }
+
+    .otp-header h2{
+        font-size:1.6rem;
     }
 
 }

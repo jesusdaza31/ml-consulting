@@ -534,6 +534,12 @@
                     La tranquilidad de nuestros clientes es nuestra mejor carta de presentación.
                 </p>
 
+                <div class="testimonials-cta-wrap">
+                    <button type="button" class="btn btn-testimonial-trigger" id="openTestimonialModalBtn">
+                        <i class="fa-solid fa-pen-nib"></i> Compartir mi experiencia
+                    </button>
+                </div>
+
             </div>
 
             <div class="slider" id="slider">
@@ -624,6 +630,46 @@
                             <div>
                                 <strong>Jorge P.</strong>
                                 <small>Registro de empresas</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slide">
+                        <div class="slide-stars">
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                        <p>
+                            "Excelente servicio con el trámite de mi número ITIN y la notarización de documentos. La atención fue clara, humana y rápida. Muy agradecida con la Lic. María y su equipo."
+                        </p>
+                        <div class="slide-author">
+                            <span class="author-initial">AS</span>
+                            <div>
+                                <strong>Ana S.</strong>
+                                <small>Trámites de ITIN y Notaría</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="slide">
+                        <div class="slide-stars">
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                            <i class="fa-solid fa-star"></i>
+                        </div>
+                        <p>
+                            "Llevar la contabilidad de mi compañía solía ser un dolor de cabeza hasta que encontré a ML Consulting. Gran profesionalismo, puntualidad y siempre atentos a resolver dudas."
+                        </p>
+                        <div class="slide-author">
+                            <span class="author-initial">RD</span>
+                            <div>
+                                <strong>Roberto D.</strong>
+                                <small>Asesoría Contable y Payroll</small>
                             </div>
                         </div>
                     </div>
@@ -809,6 +855,85 @@
         </div>
 
     </footer>
+
+    <!-- MODAL PARA AGREGAR TESTIMONIO -->
+    <div class="site-modal" id="testimonialModal" aria-hidden="true" role="dialog" aria-labelledby="testimonialModalTitle">
+        <div class="site-modal-overlay" id="testimonialModalOverlay"></div>
+        <div class="site-modal-card">
+            <button type="button" class="site-modal-close" id="closeTestimonialModalBtn" aria-label="Cerrar ventana">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+
+            <div class="site-modal-header">
+                <span class="site-modal-tag"><i class="fa-solid fa-star"></i> Tu opinión nos importa</span>
+                <h3 id="testimonialModalTitle">Comparte tu experiencia</h3>
+                <p>Tu opinión ayuda a más personas de nuestra comunidad a tomar decisiones con confianza y tranquilidad.</p>
+            </div>
+
+            <form id="testimonialForm" class="testimonial-form">
+                <div class="form-group">
+                    <label class="form-label">Calificación de nuestro servicio</label>
+                    <div class="rating-picker" id="ratingPicker">
+                        <input type="hidden" name="rating" id="ratingValue" value="5">
+                        <button type="button" class="star-btn active" data-rating="1" aria-label="1 estrella"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="star-btn active" data-rating="2" aria-label="2 estrellas"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="star-btn active" data-rating="3" aria-label="3 estrellas"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="star-btn active" data-rating="4" aria-label="4 estrellas"><i class="fa-solid fa-star"></i></button>
+                        <button type="button" class="star-btn active" data-rating="5" aria-label="5 estrellas"><i class="fa-solid fa-star"></i></button>
+                        <span class="rating-text" id="ratingLabel">Excelente (5 de 5)</span>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="testimonialName" class="form-label">Tu nombre o cómo deseas aparecer *</label>
+                        <input type="text" id="testimonialName" name="name" class="form-input" placeholder="Ej. Ana Martínez o Ana M." required maxlength="80">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="testimonialService" class="form-label">Servicio recibido *</label>
+                        <select id="testimonialService" name="service" class="form-input" required>
+                            <option value="" disabled selected>Selecciona un servicio</option>
+                            <option value="Preparación de impuestos">Preparación de impuestos</option>
+                            <option value="Formas migratorias">Formas migratorias</option>
+                            <option value="Seguros de salud">Seguros de salud</option>
+                            <option value="Registro de empresas">Registro de empresas</option>
+                            <option value="Trámites de ITIN">Trámites de ITIN</option>
+                            <option value="Notaría y traducciones">Notaría y traducciones</option>
+                            <option value="Asesoría contable y Payroll">Asesoría contable y Payroll</option>
+                            <option value="Otro servicio">Otro servicio</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="testimonialContent" class="form-label">Tu testimonio / experiencia *</label>
+                    <textarea id="testimonialContent" name="content" class="form-textarea" rows="4" placeholder="Cuéntanos con confianza cómo te apoyamos, qué te pareció la atención y el resultado..." required minlength="10" maxlength="600"></textarea>
+                    <div class="textarea-footer">
+                        <small class="form-note"><i class="fa-solid fa-shield-halved"></i> Será revisado por nuestro equipo antes de publicarse en la pantalla principal.</small>
+                        <span class="char-count" id="charCount">0 / 600</span>
+                    </div>
+                </div>
+
+                <div class="testimonial-alert" id="testimonialAlert" hidden></div>
+
+                <div class="site-modal-actions">
+                    <button type="button" class="btn btn-secondary" id="cancelTestimonialBtn">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="submitTestimonialBtn">
+                        <span class="btn-text"><i class="fa-solid fa-paper-plane"></i> Enviar testimonio</span>
+                        <span class="btn-spinner" hidden><i class="fa-solid fa-circle-notch fa-spin"></i> Enviando...</span>
+                    </button>
+                </div>
+            </form>
+
+            <div class="testimonial-success-state" id="testimonialSuccessState" hidden>
+                <div class="success-icon"><i class="fa-solid fa-circle-check"></i></div>
+                <h4>¡Muchas gracias por tu testimonio!</h4>
+                <p>Apreciamos enormemente tu tiempo y confianza. Tu opinión ha sido enviada al administrador y se publicará en la pantalla principal tras su aprobación.</p>
+                <button type="button" class="btn btn-primary" id="closeSuccessBtn">Entendido</button>
+            </div>
+        </div>
+    </div>
 
     <!-- WhatsApp flotante -->
     <a href="https://wa.me/16787919957" target="_blank" rel="noopener"

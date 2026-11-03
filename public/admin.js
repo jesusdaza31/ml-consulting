@@ -18,7 +18,11 @@ const state = {
   payments: [],
   paymentsFilter: '',
   paymentsStatusFilter: 'all',
-  paymentsMethodFilter: 'all'
+  paymentsMethodFilter: 'all',
+  testimonials: [],
+  testimonialsFilter: '',
+  testimonialsStatusFilter: 'all',
+  testimonialCounts: { total: 0, pending: 0, approved: 0, rejected: 0 }
 };
 
 let visualSaveTimer = null;
@@ -127,14 +131,15 @@ async function initSession() {
 /* ---------- Carga de datos ---------- */
 
 async function loadAll() {
-  const [dash, usersRes, coursesRes, videosRes, imagesRes, filesRes, paymentsRes] = await Promise.all([
+  const [dash, usersRes, coursesRes, videosRes, imagesRes, filesRes, paymentsRes, testimonialsRes] = await Promise.all([
     api('/api/admin/dashboard'),
     api('/api/admin/users'),
     api('/api/admin/courses'),
     api('/api/admin/videos').catch(() => ({ ok: false, status: 503, data: {} })),
     api('/api/admin/images').catch(() => ({ ok: false, status: 503, data: {} })),
     api('/api/admin/files').catch(() => ({ ok: false, status: 503, data: {} })),
-    api('/api/admin/payments').catch(() => ({ ok: false, status: 503, data: {} }))
+    api('/api/admin/payments').catch(() => ({ ok: false, status: 503, data: {} })),
+    api('/api/admin/testimonials').catch(() => ({ ok: false, status: 503, data: {} }))
   ]);
   if (!dash.ok || !usersRes.ok || !coursesRes.ok) {
     toast('No se pudieron cargar los datos.', 'error');
@@ -167,6 +172,18 @@ async function loadAll() {
     state.payments = [];
     state.paymentStats = null;
   }
+  if (testimonialsRes && testimonialsRes.ok) {
+    state.testimonials = testimonialsRes.data.testimonials || [];
+    state.testimonialCounts = testimonialsRes.data.counts || {
+      total: state.testimonials.length,
+      pending: state.testimonials.filter(t => t.status === 'pending').length,
+      approved: state.testimonials.filter(t => t.status === 'approved').length,
+      rejected: state.testimonials.filter(t => t.status === 'rejected').length
+    };
+  } else {
+    state.testimonials = [];
+    state.testimonialCounts = { total: 0, pending: 0, approved: 0, rejected: 0 };
+  }
   render();
 }
 
@@ -177,8 +194,21 @@ function switchTab(name) {
     b.classList.toggle('active', b.dataset.tab === name));
   document.querySelectorAll('.admin-panel').forEach(p =>
     p.classList.toggle('active', p.id === 'panel-' + name));
-  const titles = { resumen: 'Resumen', clientes: 'Clientes', cursos: 'Cursos', solicitudes: 'Solicitudes', pagos: 'Gestión de Pagos', videos: 'Videos', imagenes: 'Imágenes', archivos: 'Archivos' };
+  const titles = {
+    resumen: 'Resumen',
+    clientes: 'Clientes',
+    cursos: 'Cursos',
+    solicitudes: 'Solicitudes',
+    pagos: 'Gestión de Pagos',
+    videos: 'Videos',
+    imagenes: 'Imágenes',
+    archivos: 'Archivos',
+    testimonios: 'Gestión de Testimonios'
+  };
   $('panelTitle').textContent = titles[name] || 'Panel';
+  if (name === 'testimonios') {
+    loadTestimonials();
+  }
 }
 
 /* ---------- Render ---------- */
@@ -192,6 +222,7 @@ function render() {
   renderVideos();
   renderImages();
   renderFiles();
+  renderTestimonials();
 }
 
 function renderDashboard() {
@@ -202,8 +233,16 @@ function renderDashboard() {
     { v: 'v2', icon: 'fa-graduation-cap', value: d.totalCursos, label: 'Cursos y servicios' },
     { v: 'v3', icon: 'fa-user-check', value: d.totalInscripciones, label: 'Inscripciones activas' },
     { v: 'v4', icon: 'fa-chair', value: d.cuposLibresTotales, label: 'Cupos libres (cursos)' },
-    { v: 'v5', icon: 'fa-bell', value: d.solicitudesPendientes, label: 'Solicitudes pendientes' }
+    { v: 'v5', icon: 'fa-bell', value: d.solicitudesPendientes, label: 'Solicitudes pendientes' },
+    { v: 'v1', icon: 'fa-comments', value: (state.testimonialCounts ? state.testimonialCounts.approved : 0) + (state.testimonialCounts && state.testimonialCounts.pending ? ' (' + state.testimonialCounts.pending + ' pend.)' : ''), label: 'Testimonios en inicio' }
   ];
+
+  const pendingTestimonialsBadge = $('pendingTestimonialsCount');
+  if (pendingTestimonialsBadge) {
+    const pendingCount = state.testimonialCounts ? state.testimonialCounts.pending : 0;
+    pendingTestimonialsBadge.textContent = pendingCount;
+    pendingTestimonialsBadge.style.display = pendingCount > 0 ? '' : 'none';
+  }
   $('dashStats').innerHTML = cards.map(c =>
     '<div class="stat-card stat-' + c.v + '">' +
       '<span class="stat-icon"><i class="fa-solid ' + c.icon + '"></i></span>' +
@@ -1415,6 +1454,293 @@ async function refreshFiles() {
   if (res.ok) {
     state.files = res.data.files || [];
     renderFilesList();
+  }
+}
+
+/* ==========================================
+   TESTIMONIOS ADMIN
+========================================== */
+
+function getInitialsShort(name) {
+  if (!name) return 'ML';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
+function renderStarsAdmin(rating) {
+  const num = Math.max(1, Math.min(5, parseInt(rating, 10) || 5));
+  let stars = '';
+  for (let i = 0; i < 5; i++) {
+    stars += '<i class="fa-solid fa-star" style="color:' + (i < num ? 'var(--gold, #C8A76B)' : '#e2e8f0') + ';margin-right:2px;font-size:.88rem"></i>';
+  }
+  return stars;
+}
+
+async function loadTestimonials() {
+  const container = $('testimonialsContainer');
+  if (container && (!state.testimonials || !state.testimonials.length)) {
+    container.innerHTML = '<p class="admin-loading">Cargando testimonios…</p>';
+  }
+  const res = await api('/api/admin/testimonials');
+  if (res.ok) {
+    state.testimonials = res.data.testimonials || [];
+    state.testimonialCounts = res.data.counts || {
+      total: state.testimonials.length,
+      pending: state.testimonials.filter(t => t.status === 'pending').length,
+      approved: state.testimonials.filter(t => t.status === 'approved').length,
+      rejected: state.testimonials.filter(t => t.status === 'rejected').length
+    };
+    renderTestimonials();
+  } else {
+    if (container) {
+      container.innerHTML = '<p class="course-empty">No se pudieron cargar los testimonios.</p>';
+    }
+  }
+}
+
+function renderTestimonials() {
+  const container = $('testimonialsContainer');
+  const statsWrap = $('testimonialsStats');
+  if (!container) return;
+
+  const all = state.testimonials || [];
+  const pendingCount = all.filter(t => t.status === 'pending').length;
+  const approvedCount = all.filter(t => t.status === 'approved').length;
+  const rejectedCount = all.filter(t => t.status === 'rejected').length;
+
+  // Actualizar badge lateral
+  const pendingBadge = $('pendingTestimonialsCount');
+  if (pendingBadge) {
+    pendingBadge.textContent = pendingCount;
+    pendingBadge.style.display = pendingCount > 0 ? '' : 'none';
+  }
+
+  // Render stats chips
+  if (statsWrap) {
+    statsWrap.innerHTML = [
+      { v: 'v1', icon: 'fa-comments', value: all.length, label: 'Total de testimonios' },
+      { v: 'v3', icon: 'fa-circle-check', value: approvedCount, label: 'En pantalla principal' },
+      { v: 'v5', icon: 'fa-clock', value: pendingCount, label: 'Pendientes por revisar' }
+    ].map(c =>
+      '<div class="stat-card stat-' + c.v + '">' +
+        '<span class="stat-icon"><i class="fa-solid ' + c.icon + '"></i></span>' +
+        '<div class="stat-value">' + escapeHtml(c.value) + '</div>' +
+        '<div class="stat-label">' + escapeHtml(c.label) + '</div>' +
+      '</div>'
+    ).join('');
+  }
+
+  // Filtrado
+  const query = (state.testimonialsFilter || '').toLowerCase().trim();
+  const statusFilter = state.testimonialsStatusFilter || 'all';
+
+  const filtered = all.filter(t => {
+    if (statusFilter !== 'all' && t.status !== statusFilter) return false;
+    if (query) {
+      const matchName = (t.name || '').toLowerCase().includes(query);
+      const matchService = (t.service || '').toLowerCase().includes(query);
+      const matchContent = (t.content || '').toLowerCase().includes(query);
+      return matchName || matchService || matchContent;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    container.innerHTML = '<div class="admin-block" style="text-align:center;padding:40px 20px;">' +
+      '<i class="fa-solid fa-comments" style="font-size:2.5rem;color:rgba(106,32,53,.2);margin-bottom:12px;display:block;"></i>' +
+      '<p class="course-empty" style="margin:0;">No hay testimonios que coincidan con los filtros actuales.</p>' +
+    '</div>';
+    return;
+  }
+
+  container.innerHTML = '<div class="admin-testimonials-grid">' +
+    filtered.map(t => {
+      const isApproved = t.status === 'approved';
+      const isPending = t.status === 'pending';
+
+      let statusBadge = '';
+      if (isApproved) {
+        statusBadge = '<span class="admin-t-badge approved"><i class="fa-solid fa-circle-check"></i> En pantalla principal</span>';
+      } else if (isPending) {
+        statusBadge = '<span class="admin-t-badge pending"><i class="fa-solid fa-clock"></i> Pendiente de revisión</span>';
+      } else {
+        statusBadge = '<span class="admin-t-badge rejected"><i class="fa-solid fa-eye-slash"></i> Oculto</span>';
+      }
+
+      const initials = getInitialsShort(t.name);
+      const dateStr = t.createdAt ? fmtDate(t.createdAt) : '—';
+
+      return '<div class="admin-testimonial-card ' + escapeHtml(t.status) + '" data-id="' + escapeHtml(t.id) + '">' +
+        '<div class="admin-t-head">' +
+          '<div class="admin-t-user">' +
+            '<div class="admin-t-avatar">' + escapeHtml(initials) + '</div>' +
+            '<div>' +
+              '<strong>' + escapeHtml(t.name) + '</strong>' +
+              '<small class="admin-t-service"><i class="fa-solid fa-tag"></i> ' + escapeHtml(t.service) + '</small>' +
+            '</div>' +
+          '</div>' +
+          '<div style="text-align:right;">' +
+            statusBadge +
+            '<div style="margin-top:6px;">' + renderStarsAdmin(t.rating) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<blockquote class="admin-t-quote">“' + escapeHtml(t.content) + '”</blockquote>' +
+        '<div class="admin-t-foot">' +
+          '<small class="admin-t-date"><i class="fa-regular fa-calendar"></i> ' + escapeHtml(dateStr) + '</small>' +
+          '<div class="admin-t-actions">' +
+            (isApproved
+              ? '<button type="button" class="admin-btn admin-btn-sm admin-btn-secondary" data-t-action="hide" data-id="' + escapeHtml(t.id) + '"><i class="fa-solid fa-eye-slash"></i> Ocultar</button>'
+              : '<button type="button" class="admin-btn admin-btn-sm admin-btn-primary" data-t-action="approve" data-id="' + escapeHtml(t.id) + '"><i class="fa-solid fa-circle-check"></i> Mostrar en inicio</button>'
+            ) +
+            (isPending
+              ? '<button type="button" class="admin-btn admin-btn-sm admin-btn-secondary" data-t-action="reject" data-id="' + escapeHtml(t.id) + '"><i class="fa-solid fa-ban"></i> Rechazar</button>'
+              : ''
+            ) +
+            '<button type="button" class="admin-btn admin-btn-sm admin-btn-secondary" data-t-action="edit" data-id="' + escapeHtml(t.id) + '" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>' +
+            '<button type="button" class="admin-btn admin-btn-sm admin-btn-danger" data-t-action="delete" data-id="' + escapeHtml(t.id) + '" title="Eliminar"><i class="fa-solid fa-trash"></i></button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('') +
+  '</div>';
+}
+
+async function setTestimonialStatus(id, newStatus) {
+  const item = (state.testimonials || []).find(t => t.id === id);
+  if (!item) return;
+
+  const oldStatus = item.status;
+  item.status = newStatus;
+  renderTestimonials();
+
+  const res = await api('/api/admin/testimonials/' + id, {
+    method: 'PATCH',
+    body: JSON.stringify({ status: newStatus, featured: newStatus === 'approved' })
+  });
+
+  if (res.ok) {
+    if (newStatus === 'approved') {
+      toast('Testimonio aprobado. Ahora es visible en la pantalla principal.');
+    } else if (newStatus === 'rejected') {
+      toast('Testimonio marcado como oculto / rechazado.');
+    } else {
+      toast('Estado de testimonio actualizado.');
+    }
+    loadTestimonials();
+  } else {
+    item.status = oldStatus;
+    renderTestimonials();
+    toast(res.data.error || 'No se pudo actualizar el testimonio.', 'error');
+  }
+}
+
+async function deleteTestimonialAction(id) {
+  const item = (state.testimonials || []).find(t => t.id === id);
+  const name = item ? item.name : 'este testimonio';
+  if (!confirm('¿Seguro que deseas eliminar definitivamente el testimonio de "' + name + '"?')) {
+    return;
+  }
+
+  const res = await api('/api/admin/testimonials/' + id, {
+    method: 'DELETE'
+  });
+
+  if (res.ok) {
+    toast('Testimonio eliminado correctamente.');
+    state.testimonials = (state.testimonials || []).filter(t => t.id !== id);
+    renderTestimonials();
+    loadTestimonials();
+  } else {
+    toast(res.data.error || 'Error al eliminar el testimonio.', 'error');
+  }
+}
+
+function testimonialFormHtml(item) {
+  const isEdit = !!item;
+  const rating = item ? item.rating : 5;
+  const status = item ? item.status : 'approved';
+
+  return '<h2>' + (isEdit ? 'Editar testimonio' : 'Nuevo testimonio') + '</h2>' +
+    '<form id="adminTestimonialForm" class="admin-form">' +
+      '<div class="admin-field">' +
+        '<label class="admin-label">Nombre del cliente *</label>' +
+        '<input type="text" name="name" class="admin-input" required value="' + (isEdit ? escapeHtml(item.name) : '') + '" placeholder="Ej. Ana Martínez">' +
+      '</div>' +
+      '<div class="admin-field">' +
+        '<label class="admin-label">Servicio *</label>' +
+        '<input type="text" name="service" class="admin-input" required value="' + (isEdit ? escapeHtml(item.service) : '') + '" placeholder="Ej. Preparación de impuestos, Formas migratorias...">' +
+      '</div>' +
+      '<div class="admin-field">' +
+        '<label class="admin-label">Calificación (Estrellas)</label>' +
+        '<select name="rating" class="admin-input">' +
+          '<option value="5"' + (rating === 5 ? ' selected' : '') + '>★★★★★ (5 estrellas)</option>' +
+          '<option value="4"' + (rating === 4 ? ' selected' : '') + '>★★★★☆ (4 estrellas)</option>' +
+          '<option value="3"' + (rating === 3 ? ' selected' : '') + '>★★★☆☆ (3 estrellas)</option>' +
+          '<option value="2"' + (rating === 2 ? ' selected' : '') + '>★★☆☆☆ (2 estrellas)</option>' +
+          '<option value="1"' + (rating === 1 ? ' selected' : '') + '>★☆☆☆☆ (1 estrella)</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="admin-field">' +
+        '<label class="admin-label">Estado de moderación</label>' +
+        '<select name="status" class="admin-input">' +
+          '<option value="approved"' + (status === 'approved' ? ' selected' : '') + '>Aprobado (Visible en pantalla principal)</option>' +
+          '<option value="pending"' + (status === 'pending' ? ' selected' : '') + '>Pendiente de revisión</option>' +
+          '<option value="rejected"' + (status === 'rejected' ? ' selected' : '') + '>Oculto / Rechazado</option>' +
+        '</select>' +
+      '</div>' +
+      '<div class="admin-field">' +
+        '<label class="admin-label">Contenido del testimonio *</label>' +
+        '<textarea name="content" class="admin-input" rows="4" required placeholder="Escribe el testimonio...">' + (isEdit ? escapeHtml(item.content) : '') + '</textarea>' +
+      '</div>' +
+      '<div class="admin-modal-actions">' +
+        '<button type="button" class="admin-btn admin-btn-secondary" onclick="closeModal()">Cancelar</button>' +
+        '<button type="submit" class="admin-btn admin-btn-primary">' + (isEdit ? 'Guardar cambios' : 'Crear testimonio') + '</button>' +
+      '</div>' +
+    '</form>';
+}
+
+function openTestimonialModal(item) {
+  openModal(testimonialFormHtml(item));
+  const form = $('adminTestimonialForm');
+  if (form) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const payload = {
+        name: fd.get('name'),
+        service: fd.get('service'),
+        rating: parseInt(fd.get('rating'), 10) || 5,
+        status: fd.get('status'),
+        content: fd.get('content')
+      };
+
+      if (item && item.id) {
+        const res = await api('/api/admin/testimonials/' + item.id, {
+          method: 'PATCH',
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          toast('Testimonio actualizado.');
+          closeModal();
+          loadTestimonials();
+        } else {
+          toast(res.data.error || 'Error al actualizar.', 'error');
+        }
+      } else {
+        const res = await api('/api/admin/testimonials', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          toast('Testimonio creado.');
+          closeModal();
+          loadTestimonials();
+        } else {
+          toast(res.data.error || 'Error al crear.', 'error');
+        }
+      }
+    });
   }
 }
 
@@ -3122,6 +3448,48 @@ function bindEvents() {
       if (action === 'approve') approvePayment(id);
       else if (action === 'view') openModal(viewPaymentDetailsModal(id));
       else if (action === 'delete') deletePayment(id);
+    });
+  }
+
+  // Eventos de Testimonios
+  if ($('testimonialsSearch')) {
+    $('testimonialsSearch').addEventListener('input', e => {
+      state.testimonialsFilter = e.target.value;
+      renderTestimonials();
+    });
+  }
+
+  if ($('testimonialsStatusFilter')) {
+    $('testimonialsStatusFilter').addEventListener('change', e => {
+      state.testimonialsStatusFilter = e.target.value;
+      renderTestimonials();
+    });
+  }
+
+  if ($('addTestimonialBtn')) {
+    $('addTestimonialBtn').addEventListener('click', () => {
+      openTestimonialModal(null);
+    });
+  }
+
+  if ($('testimonialsContainer')) {
+    $('testimonialsContainer').addEventListener('click', e => {
+      const btn = e.target.closest('[data-t-action]');
+      if (!btn) return;
+      const action = btn.dataset.tAction;
+      const id = btn.dataset.id;
+      if (!id) return;
+
+      if (action === 'approve') {
+        setTestimonialStatus(id, 'approved');
+      } else if (action === 'reject' || action === 'hide') {
+        setTestimonialStatus(id, 'rejected');
+      } else if (action === 'delete') {
+        deleteTestimonialAction(id);
+      } else if (action === 'edit') {
+        const item = (state.testimonials || []).find(t => t.id === id);
+        if (item) openTestimonialModal(item);
+      }
     });
   }
 

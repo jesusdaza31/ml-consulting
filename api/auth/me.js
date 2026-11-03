@@ -49,6 +49,7 @@ module.exports = async (req, res) => {
         id: profile.id,
         name: profile.name,
         email: req.user.email,
+        phone: profile.phone || req.user.phone || '',
         role: profile.role,
         createdAt: profile.created_at
       },
