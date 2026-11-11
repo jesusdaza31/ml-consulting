@@ -227,9 +227,9 @@ async function loadLists() {
     api('/api/client/catalog')
   ]);
   if (mis.status === 401 || cat.status === 401) { window.location.href = '/login.html'; return; }
-  if (!mis.ok || !cat.ok) { toast('No se pudieron cargar tus cursos.', 'error'); return; }
+  if (!mis.ok) { toast('No se pudieron cargar tus cursos.', 'error'); return; }
   state.courses = mis.data.cursos || [];
-  state.catalog = cat.data.cursos || [];
+  state.catalog = (cat.ok && cat.data.cursos) ? cat.data.cursos : [];
   renderList();
   renderCatalog();
 }

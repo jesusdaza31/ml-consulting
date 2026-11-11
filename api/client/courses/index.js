@@ -55,6 +55,8 @@ module.exports = async (req, res) => {
 
       if (!isAdmin && !latest) continue;
 
+      const effectiveEstado = latest ? latest.estado : (isAdmin ? 'activo' : null);
+
       const inscripcion = (latest && latest.estado === 'activo') ? {
         estado: latest.estado,
         vencimiento: latest.vencimiento,
@@ -64,7 +66,15 @@ module.exports = async (req, res) => {
         horasUsadas: c.tipo === 'servicio' ? latest.horas_usadas : null,
         horasRestantes: c.tipo === 'servicio' && latest.horas_asignadas
           ? latest.horas_asignadas - latest.horas_usadas : null
-      } : null;
+      } : (isAdmin ? {
+        estado: 'activo',
+        vencimiento: null,
+        diasRestantes: c.duracion_dias || 365,
+        vencido: false,
+        horasAsignadas: null,
+        horasUsadas: null,
+        horasRestantes: null
+      } : null);
 
       result.push({
         id: c.id,
@@ -73,7 +83,7 @@ module.exports = async (req, res) => {
         descripcion: c.descripcion || '',
         horas: c.horas,
         duracionDias: c.duracion_dias,
-        estado: latest ? latest.estado : null,
+        estado: effectiveEstado,
         fechaInscripcion: latest ? latest.fecha_inscripcion : null,
         inscripcion,
         cantidadContenido: contCountByCourse[c.id] || 0

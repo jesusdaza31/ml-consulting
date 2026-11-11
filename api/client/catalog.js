@@ -7,10 +7,6 @@ module.exports = async (req, res) => {
   }
 
   await requireAuth(req, res, async () => {
-    if (req.profile.role !== 'client') {
-      return res.status(403).json({ error: 'Solo los clientes ven el catalogo' });
-    }
-
     const userId = req.user.id;
 
     const { data: courses } = await supabaseAdmin
