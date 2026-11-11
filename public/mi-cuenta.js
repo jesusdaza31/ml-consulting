@@ -276,6 +276,130 @@ function authUrl(url) {
   return url + (url.includes('?') ? '&' : '?') + 'token=' + encodeURIComponent(token);
 }
 
+function renderRichText(raw) {
+  if (!raw) return '';
+  raw = String(raw).trim();
+  if (/^\s*<[a-z]+[\s\S]*>[\s\S]*<\/[a-z]+>\s*$/i.test(raw)) {
+    return raw;
+  }
+
+  function inlineFormat(text) {
+    let t = escapeHtml(text);
+    t = t.replace(/\[btn:(https?:\/\/[^\s:\]]+):([^\]]+)\]/g, '<a href="$1" target="_blank" rel="noopener" class="mc-action-btn"><i class="fa-solid fa-arrow-up-right-from-square"></i> $2</a>');
+    t = t.replace(/\[whatsapp:(https?:\/\/[^\s:\]]+):([^\]]+)\]/g, '<a href="$1" target="_blank" rel="noopener" class="mc-action-btn mc-action-whatsapp"><i class="fa-brands fa-whatsapp"></i> $2</a>');
+    t = t.replace(/\[badge:([a-z0-9_-]+):([^\]]+)\]/g, '<span class="mc-badge mc-badge-$1">$2</span>');
+    t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    t = t.replace(/(^|\s)\*([^*\n:]+:)(\s|$)/g, '$1<strong>$2</strong>$3');
+    t = t.replace(/_([^_]+)_/g, '<em>$1</em>');
+    return t;
+  }
+
+  const lines = raw.split(/\r?\n/);
+  const output = [];
+  let currentList = null;
+
+  function closeList() {
+    if (currentList) {
+      if (currentList === 'ul') output.push('</ul>');
+      else if (currentList === 'ol') output.push('</ol>');
+      else if (currentList === 'checklist') output.push('</div>');
+      currentList = null;
+    }
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) {
+      closeList();
+      continue;
+    }
+
+    const calloutMatch = line.match(/^>\s*\[!(NOTE|TIP|IMPORTANT|WARNING)\]\s*(.*)$/i);
+    if (calloutMatch) {
+      closeList();
+      const type = calloutMatch[1].toLowerCase();
+      const content = calloutMatch[2] || '';
+      const titles = {
+        note: '<i class="fa-solid fa-circle-info"></i> Nota Informativa',
+        tip: '<i class="fa-solid fa-lightbulb"></i> Consejo Práctico',
+        important: '<i class="fa-solid fa-circle-exclamation"></i> Punto Importante',
+        warning: '<i class="fa-solid fa-triangle-exclamation"></i> Advertencia Legal'
+      };
+      output.push('<div class="mc-callout mc-callout-' + type + '"><div class="mc-callout-head">' + (titles[type] || type) + '</div><div class="mc-callout-body">' + inlineFormat(content) + '</div></div>');
+      continue;
+    }
+
+    if (line.startsWith('### ')) {
+      closeList();
+      output.push('<h3 class="mc-rich-h3"><i class="fa-solid fa-bookmark"></i> ' + inlineFormat(line.slice(4)) + '</h3>');
+      continue;
+    }
+    if (line.startsWith('#### ')) {
+      closeList();
+      output.push('<h4 class="mc-rich-h4">' + inlineFormat(line.slice(5)) + '</h4>');
+      continue;
+    }
+
+    const checkMatch = line.match(/^[-*]\s*\[([ xX])\]\s*(.*)$/);
+    if (checkMatch) {
+      if (currentList !== 'checklist') {
+        closeList();
+        output.push('<div class="mc-checklist">');
+        currentList = 'checklist';
+      }
+      const rawText = checkMatch[2];
+      const checkId = 'ptin_chk_' + Math.abs(rawText.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0));
+      const isSavedChecked = typeof localStorage !== 'undefined' && localStorage.getItem(checkId) === '1';
+      const isChecked = isSavedChecked || checkMatch[1].toLowerCase() === 'x';
+      output.push('<label class="mc-check-item' + (isChecked ? ' is-checked' : '') + '"><input type="checkbox" class="mc-check-box" data-check-id="' + checkId + '"' + (isChecked ? ' checked' : '') + ' onchange="window.handleCheckChange(this)"><span class="mc-check-label">' + inlineFormat(rawText) + '</span></label>');
+      continue;
+    }
+
+    const ulMatch = line.match(/^[-*]\s+(.*)$/);
+    if (ulMatch) {
+      if (currentList !== 'ul') {
+        closeList();
+        output.push('<ul class="mc-rich-ul">');
+        currentList = 'ul';
+      }
+      output.push('<li><i class="fa-solid fa-circle-check"></i> <span>' + inlineFormat(ulMatch[1]) + '</span></li>');
+      continue;
+    }
+
+    const olMatch = line.match(/^(\d+)\.\s+(.*)$/);
+    if (olMatch) {
+      if (currentList !== 'ol') {
+        closeList();
+        output.push('<ol class="mc-rich-ol">');
+        currentList = 'ol';
+      }
+      output.push('<li><span class="mc-step-num">' + olMatch[1] + '</span> <span>' + inlineFormat(olMatch[2]) + '</span></li>');
+      continue;
+    }
+
+    closeList();
+    output.push('<p>' + inlineFormat(line) + '</p>');
+  }
+
+  closeList();
+  return output.join('\n');
+}
+
+window.handleCheckChange = function(el) {
+  if (!el) return;
+  const item = el.closest('.mc-check-item');
+  const checkId = el.getAttribute('data-check-id');
+  if (item) {
+    if (el.checked) {
+      item.classList.add('is-checked');
+      if (checkId) localStorage.setItem(checkId, '1');
+    } else {
+      item.classList.remove('is-checked');
+      if (checkId) localStorage.removeItem(checkId);
+    }
+  }
+};
+
 function contentItemHtml(item) {
   const meta = {
     texto: { icon: 'fa-file-lines', label: 'Texto' },
@@ -289,10 +413,9 @@ function contentItemHtml(item) {
 
   let body = '';
   if (item.tipo === 'texto') {
-    body = '<div class="mc-texto">' +
-      String(item.texto || '').split(/\n{2,}/).map(p =>
-        '<p>' + escapeHtml(p.trim()) + '</p>'
-      ).join('') + '</div>';
+    body = '<div class="mc-texto mc-rich-content">' +
+      renderRichText(item.texto) +
+    '</div>';
   } else if (item.tipo === 'video') {
     if (item.r2VideoId) {
       // Video privado en R2: se reproduce vía /api/client/video/:id (302 → URL firmada)
