@@ -59,11 +59,14 @@ const values = textItems.map((it, i) => {
 sql += values.join(',\n') + `;
 
   -- 4. Auto-inscribir a los usuarios existentes en estado 'activo' (sin usar ON CONFLICT)
-  INSERT INTO inscripciones (course_id, client_id, estado, vencimiento, horas_usadas, created_at)
+  UPDATE inscripciones SET fecha_inscripcion = COALESCE(fecha_inscripcion, created_at, NOW()) WHERE fecha_inscripcion IS NULL;
+
+  INSERT INTO inscripciones (course_id, client_id, estado, fecha_inscripcion, vencimiento, horas_usadas, created_at)
   SELECT 
     v_course_id, 
     p.id, 
     'activo', 
+    NOW(),
     NOW() + INTERVAL '365 days', 
     0, 
     NOW()
