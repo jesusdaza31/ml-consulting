@@ -16,14 +16,14 @@ BEGIN
     'Formación integral para convertirte en preparador de impuestos profesional habilitado por el IRS. Aprende el marco legal de la profesión, trámite del PTIN, dominio del Form 1040, créditos familiares, trabajadores independientes, casos con ITIN, software profesional y estrategias comerciales para conseguir tus primeros clientes.',
     'Capacitar al estudiante para tramitar su PTIN ante el IRS, preparar y firmar declaraciones de impuestos personales (Form 1040 y anexos) con total apego normativo, y construir una práctica tributaria rentable y ética.',
     'Al finalizar el curso completo, tendrás tu PTIN activo, sabrás preparar declaraciones W-2, trabajadores por cuenta propia (Schedule C), casos con ITIN e inversiones, manejarás software profesional y contarás con una estrategia clara para captar y atender a tus primeros clientes.',
-    ARRAY[
-      'Módulo 0 — Orientación y fundamentos legales',
-      'Módulo 1 — Fundamentos del Form 1040',
-      'Módulo 2 — Trabajadores independientes y pequeños negocios',
-      'Módulo 3 — Situaciones especiales',
-      'Módulo 4 — Software y flujo de trabajo profesional',
-      'Módulo 5 — Construir el negocio'
-    ]::TEXT[],
+    '[
+      "Módulo 0 — Orientación y fundamentos legales",
+      "Módulo 1 — Fundamentos del Form 1040",
+      "Módulo 2 — Trabajadores independientes y pequeños negocios",
+      "Módulo 3 — Situaciones especiales",
+      "Módulo 4 — Software y flujo de trabajo profesional",
+      "Módulo 5 — Construir el negocio"
+    ]'::jsonb,
     360,
     NOW()
   )
